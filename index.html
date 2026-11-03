@@ -68,6 +68,8 @@ main.no-total{padding-bottom:calc(76px + env(safe-area-inset-bottom,0px) + 24px)
 
 /* Sections */
 fieldset.sec,.sec{border:1px solid var(--line);background:var(--surface);border-radius:var(--r);padding:14px;margin:0;min-width:0;display:flex;flex-direction:column;gap:12px}
+/* A floated legend is laid out inside the card like any other child, instead of sitting on the top border */
+fieldset.sec>legend.sec-title{float:left;width:100%}
 .sec-title{display:flex;align-items:baseline;justify-content:space-between;gap:10px;font-size:11.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);padding:0;margin:0}
 .sec-title .num{letter-spacing:0;text-transform:none;font-size:13px;color:var(--ink);font-weight:500}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -699,7 +701,10 @@ async function btOpen(device, say) {
   say?.(`Connecting to ${device.name || 'printer'}…`);
   const server = await withTimeout(device.gatt.connect(), 12000, 'TIMEOUT');
   bt.ch = await withTimeout(findWritable(server), 8000, 'TIMEOUT');
-  bt.device = device; renderPrinter();
+  bt.device = device;
+  const short = u => { const m = /^0000([0-9a-f]{4})-0000-1000-8000-00805f9b34fb$/i.exec(u); return m ? m[1] : u.slice(0, 8); };
+  bt.via = short(bt.ch.service.uuid) + '/' + short(bt.ch.uuid);
+  renderPrinter();
 }
 async function btConnect(say) {
   if (!navigator.bluetooth) throw new Error('NO_API');
@@ -724,7 +729,7 @@ window.addEventListener('pagehide', () => { try { bt.device?.gatt?.disconnect();
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 async function btWrite(bytes, say) {
   await btEnsure(say);
-  say?.('Printing…');
+  say?.(`Printing… ${bytes.length.toLocaleString('en-US')} bytes via channel ${bt.via}`);
   const ch = bt.ch;
   const w = p => ch.properties.writeWithoutResponse && ch.writeValueWithoutResponse ? ch.writeValueWithoutResponse(p)
     : ch.writeValueWithResponse ? ch.writeValueWithResponse(p) : ch.writeValue(p);
@@ -980,7 +985,7 @@ $('#btnBT').addEventListener('click', async e => {
   try {
     const bytes = escpos(pv.slip, S.settings, S.settings.copies);
     await btWrite(bytes, say);
-    setStatus('#pvStatus', `Sent to ${S.settings.printerName || 'printer'}.`, 'ok');
+    setStatus('#pvStatus', `Sent to ${S.settings.printerName || 'printer'} (channel ${bt.via}, ${bytes.length.toLocaleString('en-US')} bytes).`, 'ok');
     record('Bluetooth');
   } catch (err) { setStatus('#pvStatus', btError(err), 'err'); }
   btn.disabled = false;
@@ -1033,7 +1038,7 @@ $('#btnConnect').addEventListener('click', async () => {
 });
 $('#btnTest').addEventListener('click', async e => {
   const btn = e.currentTarget; btn.disabled = true;
-  try { await btWrite(testBytes(S.settings), m => setStatus('#setStatus', m)); setStatus('#setStatus', `Test page sent to ${S.settings.printerName || 'printer'}. Compare the two accent lines.`, 'ok'); }
+  try { await btWrite(testBytes(S.settings), m => setStatus('#setStatus', m)); setStatus('#setStatus', `Test page sent to ${S.settings.printerName || 'printer'} (channel ${bt.via}). If no paper came out, press the printer's FEED button: if the paper doesn't move either, the printer needs charging.`, 'ok'); }
   catch (err) { setStatus('#setStatus', btError(err), 'err'); }
   btn.disabled = false;
 });
