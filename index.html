@@ -1,0 +1,1052 @@
+<title>Volantes de Depósito</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="theme-color" content="#17607A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap">
+<style id="pageStyle">@page{margin:2mm}</style>
+<style>
+/* Layout: one-column phone app — sticky header, scrolling form sections, fixed dock (running total + tabs) at the bottom.
+   Look: bank security-paper teal ink on a faintly mint ground; mono figures like a teller's tape. */
+:root{
+  --bg:#EDF3F1; --surface:#FFFFFF; --sunk:#E2EBE8; --ink:#13232A; --muted:#566A6F; --line:#CCD9D5;
+  --accent:#17607A; --accent-ink:#FFFFFF; --accent-soft:#D3E7EE; --stamp:#A8392D; --ok:#26744A; --warn:#8A5E00;
+  --paper:#FFFFFF; --paper-ink:#111111; --shadow:0 1px 2px rgba(19,35,42,.06),0 6px 20px rgba(19,35,42,.08);
+  --f-ui:"Schibsted Grotesk",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-num:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+  --r:10px; --dock-h:136px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0D1517; --surface:#152024; --sunk:#1B292E; --ink:#E1EAE8; --muted:#90A2A4; --line:#29393E;
+  --accent:#5AAEC6; --accent-ink:#04212A; --accent-soft:#17363F; --stamp:#E57B6D; --ok:#6BC28E; --warn:#E2B44F;
+  --paper:#F6F6F1; --paper-ink:#111111; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0D1517; --surface:#152024; --sunk:#1B292E; --ink:#E1EAE8; --muted:#90A2A4; --line:#29393E;
+  --accent:#5AAEC6; --accent-ink:#04212A; --accent-soft:#17363F; --stamp:#E57B6D; --ok:#6BC28E; --warn:#E2B44F;
+  --paper:#F6F6F1; --paper-ink:#111111; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35); color-scheme:dark}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-ui);font-size:15px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.num,input.num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* Header */
+.appbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;margin-inline:calc(-1 * max(16px,env(safe-area-inset-left,0px))) calc(-1 * max(16px,env(safe-area-inset-right,0px)));
+  padding:12px max(16px,env(safe-area-inset-right,0px)) 12px max(16px,env(safe-area-inset-left,0px));
+  background:var(--surface);border-bottom:1px solid var(--line);
+  background-image:repeating-radial-gradient(circle at 105% 140%,transparent 0 7px,color-mix(in srgb,var(--accent) 9%,transparent) 7px 8px)}
+.appbar-in{max-width:560px;margin:0 auto;display:flex;align-items:center;gap:12px}
+.mark{width:34px;height:34px;flex:none;border-radius:8px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center}
+.brand{min-width:0;flex:1}
+.brand h1{margin:0;font-size:18px;font-weight:700;letter-spacing:-.01em;line-height:1.1}
+.brand p{margin:0;font-size:12px;color:var(--muted)}
+.chip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 11px;font-size:12.5px;font-weight:500;cursor:pointer;max-width:46vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex:none}
+.chip.on .dot{background:var(--ok)}
+
+main{max-width:560px;margin:0 auto;padding-block:16px calc(var(--dock-h) + env(safe-area-inset-bottom,0px) + 24px)}
+main.no-total{padding-bottom:calc(76px + env(safe-area-inset-bottom,0px) + 24px)}
+.view{display:flex;flex-direction:column;gap:14px}
+.view-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.view-head h2{margin:0;font-size:22px;font-weight:700;letter-spacing:-.015em;text-wrap:balance}
+.lede{margin:0;color:var(--muted);font-size:13.5px}
+
+/* Sections */
+fieldset.sec,.sec{border:1px solid var(--line);background:var(--surface);border-radius:var(--r);padding:14px;margin:0;min-width:0;display:flex;flex-direction:column;gap:12px}
+.sec-title{display:flex;align-items:baseline;justify-content:space-between;gap:10px;font-size:11.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);padding:0;margin:0}
+.sec-title .num{letter-spacing:0;text-transform:none;font-size:13px;color:var(--ink);font-weight:500}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row>*{min-width:0}
+label.f{display:flex;flex-direction:column;gap:5px;font-size:12.5px;font-weight:500;color:var(--muted);min-width:0}
+input[type=text],input[type=date],input:not([type]),select,textarea{width:100%;min-height:44px;padding:9px 11px;border:1px solid var(--line);border-radius:8px;background:var(--bg);font-size:16px;color:var(--ink)}
+textarea{min-height:90px;font-family:var(--f-num);font-size:12.5px;resize:vertical}
+input::placeholder{color:color-mix(in srgb,var(--muted) 70%,transparent)}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);outline:none;background:var(--surface);box-shadow:0 0 0 3px var(--accent-soft)}
+input.acct{font-family:var(--f-num);letter-spacing:.04em}
+
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--bg);min-height:44px}
+.seg label{flex:1;position:relative;display:flex}
+.seg input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.seg span{flex:1;display:grid;place-items:center;font-size:14px;font-weight:500;padding:6px 8px;color:var(--muted);text-align:center}
+.seg label+label span{border-left:1px solid var(--line)}
+.seg input:checked+span{background:var(--accent);color:var(--accent-ink)}
+.seg input:focus-visible+span{outline:2px solid var(--accent);outline-offset:-3px}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:9px 16px;border-radius:8px;border:1px solid var(--line);background:var(--surface);font-weight:600;font-size:14.5px;cursor:pointer;text-align:center}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:transparent}
+.btn.danger{color:var(--stamp)}
+.btn[data-armed]{background:var(--stamp);border-color:var(--stamp);color:#fff}
+.btn.block{width:100%}
+.btn.sm{min-height:36px;padding:6px 12px;font-size:13.5px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.icon-btn{width:36px;height:36px;border-radius:8px;border:1px solid var(--line);background:transparent;cursor:pointer;display:grid;place-items:center;font-size:16px;color:var(--muted)}
+
+/* Templates strip */
+.strip{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;margin-inline:-2px;padding-inline:2px}
+.strip::-webkit-scrollbar{display:none}
+.tchip{flex:none;display:flex;flex-direction:column;align-items:flex-start;gap:1px;max-width:220px;border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:8px 12px;cursor:pointer;text-align:left}
+.tchip b{font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:196px}
+.tchip small{font-family:var(--f-num);font-size:11.5px;color:var(--muted);white-space:nowrap}
+.tchip.active{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.tchip.add{border-style:dashed;color:var(--accent);justify-content:center;font-weight:600;font-size:13.5px}
+
+.banner{display:flex;gap:10px;align-items:flex-start;border:1px dashed var(--warn);color:var(--ink);background:color-mix(in srgb,var(--warn) 9%,var(--surface));border-radius:var(--r);padding:10px 12px;font-size:13.5px}
+.banner b{color:var(--warn)}
+
+/* Denominations */
+.den-group{margin:2px 0 -4px;font-size:11.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.den{display:grid;grid-template-columns:minmax(84px,1fr) 14px minmax(64px,90px) minmax(88px,1fr);align-items:center;gap:8px}
+.den-face{font-family:var(--f-num);font-variant-numeric:tabular-nums;font-size:14px;font-weight:500;padding:8px 10px;border-radius:6px;background:var(--sunk);text-align:right;white-space:nowrap}
+.den-face.coin{border-radius:999px}
+.den.loose{grid-template-columns:1fr minmax(120px,1fr)}
+.den.loose .den-face{font-family:var(--f-ui);text-align:left;background:transparent;padding-left:0;font-size:13.5px;color:var(--muted)}
+.den-x{color:var(--muted);text-align:center}
+.den input{text-align:center;font-family:var(--f-num)}
+.den-sum{font-family:var(--f-num);font-variant-numeric:tabular-nums;text-align:right;font-size:14px;color:var(--muted)}
+.den-sum.has{color:var(--ink);font-weight:500}
+
+/* Checks */
+.check{border:1px solid var(--line);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:8px;background:var(--bg)}
+.check-head{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;font-weight:600;color:var(--muted)}
+.check-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:8px}
+.check-grid .wide{grid-column:1/-1}
+.check input{background:var(--surface)}
+.empty-line{margin:0;color:var(--muted);font-size:13.5px}
+
+/* Dock */
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-bottom:env(safe-area-inset-bottom,0px);box-shadow:0 -6px 24px rgba(0,0,0,.06)}
+.dock-in{max-width:560px;margin:0 auto}
+.totalbar{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.tot{flex:1;min-width:0}
+.tot-main{font-family:var(--f-num);font-variant-numeric:tabular-nums;font-size:22px;font-weight:600;letter-spacing:-.02em;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tot-sub{font-family:var(--f-num);font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tabbar{display:grid;grid-template-columns:repeat(4,1fr)}
+.tab{border:0;background:transparent;padding:8px 2px 9px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11.5px;font-weight:500;color:var(--muted);cursor:pointer}
+.tab svg{width:22px;height:22px}
+.tab[aria-current="page"]{color:var(--accent)}
+.tab[aria-current="page"] svg{stroke-width:2.2}
+
+/* Lists */
+.card{border:1px solid var(--line);background:var(--surface);border-radius:var(--r);padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.card-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.card h3{margin:0;font-size:15.5px;font-weight:600;min-width:0;overflow-wrap:anywhere}
+.meta{font-family:var(--f-num);font-size:12px;color:var(--muted);overflow-wrap:anywhere}
+.badge{flex:none;font-size:10.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;border-radius:5px;padding:3px 6px;background:var(--accent-soft);color:var(--accent)}
+.badge.ex{background:color-mix(in srgb,var(--warn) 15%,transparent);color:var(--warn)}
+.card-actions{display:flex;gap:8px;flex-wrap:wrap}
+.hist{cursor:pointer;text-align:left;width:100%;font:inherit;color:inherit}
+.hist .amt{font-family:var(--f-num);font-variant-numeric:tabular-nums;font-weight:600;font-size:16px;white-space:nowrap}
+.empty{border:1px dashed var(--line);border-radius:var(--r);padding:24px 16px;text-align:center;color:var(--muted);font-size:14px}
+.day{font-size:11.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:6px 0 -4px}
+
+.setrow{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.setrow>div{min-width:0}
+.setrow b{display:block;font-size:14.5px;font-weight:600}
+.setrow small{display:block;color:var(--muted);font-size:12.5px}
+.switch{position:relative;width:48px;height:28px;flex:none}
+.switch input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer;z-index:1}
+.switch span{position:absolute;inset:0;border-radius:999px;background:var(--line);transition:background .15s}
+.switch span::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s}
+.switch input:checked+span{background:var(--accent)}
+.switch input:checked+span::after{transform:translateX(20px)}
+.switch input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
+.note{font-size:13px;color:var(--muted);margin:0}
+.note code{font-family:var(--f-num);font-size:12px;background:var(--sunk);padding:1px 5px;border-radius:4px}
+
+/* Sheets */
+.sheet{position:fixed;inset:0;z-index:20;display:flex;align-items:flex-end;justify-content:center;background:rgba(6,16,20,.45)}
+.sheet-panel{width:100%;max-width:600px;max-height:94%;overflow-y:auto;background:var(--bg);border-radius:16px 16px 0 0;
+  padding:8px max(16px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:14px;animation:up .2s ease-out}
+@keyframes up{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.sheet-panel{animation:none}}
+.grab{width:40px;height:4px;border-radius:2px;background:var(--line);margin:4px auto 0}
+.sheet-head{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.sheet-head h2{margin:0;font-size:19px;font-weight:700}
+
+.paper-wrap{display:flex;justify-content:center;background:var(--sunk);border-radius:var(--r);padding:16px 10px;overflow-x:auto}
+.paper{--cols:32;background:var(--paper);color:var(--paper-ink);font-family:var(--f-num);font-size:clamp(9px,calc((100vw - 76px) / (var(--cols) * 0.6)),13.5px);line-height:1.35;padding:14px 1.2ch 18px;box-shadow:0 2px 10px rgba(0,0,0,.18);position:relative}
+.paper::after{content:"";position:absolute;left:0;right:0;bottom:-6px;height:6px;background:linear-gradient(-45deg,transparent 4px,var(--paper) 0) 0 0/8px 6px,linear-gradient(45deg,transparent 4px,var(--paper) 0) 0 0/8px 6px}
+.ln{white-space:pre;width:calc(var(--cols) * 1ch);min-height:1.35em}
+.ln.c{text-align:center}
+.ln.b{font-weight:600}
+.ln.h{font-size:1.25em;font-weight:600;line-height:1.5;width:calc(var(--cols) * 1ch / 1.25)}
+.ln.cut{color:#888;text-align:center}
+
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.actions .btn.primary{grid-column:1/-1;min-height:52px;font-size:16px}
+.stepper{display:flex;align-items:center;gap:10px}
+.stepper output{font-family:var(--f-num);font-weight:600;min-width:2ch;text-align:center;font-size:16px}
+.status{font-size:13.5px;border-radius:8px;padding:9px 11px;background:var(--sunk);color:var(--ink)}
+.status.ok{background:color-mix(in srgb,var(--ok) 14%,var(--surface));color:var(--ok)}
+.status.err{background:color-mix(in srgb,var(--stamp) 12%,var(--surface));color:var(--stamp)}
+.status.warn{background:color-mix(in srgb,var(--warn) 13%,var(--surface));color:var(--warn)}
+
+.toast{position:fixed;left:50%;bottom:calc(var(--dock-h) + env(safe-area-inset-bottom,0px) + 12px);transform:translateX(-50%);z-index:30;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;font-weight:500;box-shadow:var(--shadow);max-width:calc(100vw - 32px);text-align:center}
+
+#printArea{display:none}
+@media print{
+  body{background:#fff!important;padding:0!important}
+  body::before{display:none}
+  body>*:not(#printArea){display:none!important}
+  #printArea{display:block;color:#000;font-family:var(--f-num);font-size:2.5mm;line-height:1.3}
+  #printArea .ln{width:auto}
+  #printArea .pg{page-break-after:always}
+  #printArea .pg:last-child{page-break-after:auto}
+}
+@media (max-width:380px){.den{grid-template-columns:minmax(76px,1fr) 10px 64px minmax(76px,1fr);gap:6px}.check-grid{grid-template-columns:1fr}}
+</style>
+
+<header class="appbar">
+  <div class="appbar-in">
+    <div class="mark" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h14v18l-2.3-1.6L14.3 21 12 19.4 9.7 21l-2.4-1.6L5 21z"/><path d="M8.5 8h7M8.5 11.5h7M8.5 15h4"/></svg>
+    </div>
+    <div class="brand"><h1>Volantes</h1><p>Depósitos de efectivo y cheques</p></div>
+    <button class="chip" id="printerChip" type="button"><span class="dot"></span><span id="printerChipText">No printer</span></button>
+  </div>
+</header>
+
+<main id="main">
+  <!-- NEW SLIP -->
+  <section class="view" id="view-slip" aria-labelledby="h-slip">
+    <div class="view-head"><h2 id="h-slip">Nuevo volante</h2><button class="btn sm ghost danger" id="btnClear" type="button">Clear</button></div>
+    <div class="banner" id="exampleBanner" hidden><div><b>Example data.</b> These accounts and amounts are samples. Load one of your templates or tap Clear to start fresh.</div></div>
+
+    <div>
+      <div class="sec-title" style="margin-bottom:8px">Templates</div>
+      <div class="strip" id="tplStrip"></div>
+    </div>
+
+    <form id="slipForm" autocomplete="off" style="display:flex;flex-direction:column;gap:14px" onsubmit="return false">
+      <fieldset class="sec">
+        <legend class="sec-title">Cuenta</legend>
+        <label class="f">Banco<input id="f-bank" data-k="bank" list="banks" placeholder="Banco Popular Dominicano"></label>
+        <label class="f">Número de cuenta<input id="f-account" data-k="account" class="acct" inputmode="text" placeholder="000-000000-0"></label>
+        <label class="f">Titular (account name)<input id="f-holder" data-k="holder" placeholder="Nombre en la cuenta"></label>
+        <div class="row">
+          <div class="f" style="display:flex;flex-direction:column;gap:5px;font-size:12.5px;font-weight:500;color:var(--muted)">Tipo
+            <div class="seg" role="radiogroup" aria-label="Account type">
+              <label><input type="radio" name="accType" id="f-acc-c" data-k="accType" value="Corriente"><span>Corriente</span></label>
+              <label><input type="radio" name="accType" id="f-acc-a" data-k="accType" value="Ahorros"><span>Ahorros</span></label>
+            </div>
+          </div>
+          <div class="f" style="display:flex;flex-direction:column;gap:5px;font-size:12.5px;font-weight:500;color:var(--muted)">Moneda
+            <div class="seg" role="radiogroup" aria-label="Currency">
+              <label><input type="radio" name="currency" id="f-cur-dop" data-k="currency" value="DOP"><span>DOP</span></label>
+              <label><input type="radio" name="currency" id="f-cur-usd" data-k="currency" value="USD"><span>USD</span></label>
+            </div>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset class="sec">
+        <legend class="sec-title">Depósito</legend>
+        <div class="row">
+          <label class="f">Fecha<input id="f-date" data-k="date" type="date"></label>
+          <label class="f">Referencia<input id="f-ref" data-k="ref" placeholder="Optional"></label>
+        </div>
+        <label class="f">Depositante (who takes it)<input id="f-depositor" data-k="depositor" placeholder="Nombre del mensajero"></label>
+        <label class="f">Concepto / description<input id="f-concept" data-k="concept" placeholder="Depósito ventas 02/11"></label>
+      </fieldset>
+
+      <fieldset class="sec">
+        <legend class="sec-title" style="width:100%"><span>Efectivo</span><span class="num" id="cashSub">0.00</span></legend>
+        <div class="seg" role="radiogroup" aria-label="Cash entry">
+          <label><input type="radio" name="cashMode" id="f-cm-d" value="denoms"><span>By denomination</span></label>
+          <label><input type="radio" name="cashMode" id="f-cm-t" value="total"><span>Total only</span></label>
+        </div>
+        <div id="denoms" style="display:flex;flex-direction:column;gap:8px"></div>
+        <label class="f" id="cashTotalWrap" hidden>Total en efectivo<input id="f-cashTotal" data-k="cashTotal" class="num money" inputmode="decimal" placeholder="0.00"></label>
+      </fieldset>
+
+      <fieldset class="sec">
+        <legend class="sec-title" style="width:100%"><span>Cheques</span><span class="num" id="chkSub">0.00</span></legend>
+        <div id="checks" style="display:flex;flex-direction:column;gap:8px"></div>
+        <button class="btn ghost" type="button" id="btnAddCheck">+ Add check</button>
+      </fieldset>
+    </form>
+  </section>
+
+  <!-- TEMPLATES -->
+  <section class="view" id="view-templates" hidden aria-labelledby="h-tpl">
+    <div class="view-head"><h2 id="h-tpl">Templates</h2><button class="btn sm primary" id="btnNewTpl" type="button">+ New</button></div>
+    <p class="lede">Recurring deposits: the account, titular, currency and concepto you use every time. Amounts stay on the slip.</p>
+    <div id="tplList" style="display:flex;flex-direction:column;gap:10px"></div>
+  </section>
+
+  <!-- HISTORY -->
+  <section class="view" id="view-history" hidden aria-labelledby="h-hist">
+    <div class="view-head"><h2 id="h-hist">Printed</h2><button class="btn sm ghost danger" id="btnClearHist" type="button">Clear all</button></div>
+    <p class="lede">Every slip you print is kept on this phone. Tap one to reprint it or copy it into a new slip.</p>
+    <div id="histList" style="display:flex;flex-direction:column;gap:10px"></div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section class="view" id="view-setup" hidden aria-labelledby="h-set">
+    <div class="view-head"><h2 id="h-set">Printer &amp; slip</h2></div>
+
+    <div class="sec">
+      <div class="sec-title">Bluetooth printer</div>
+      <div class="setrow"><div><b id="setPrinterName">Not connected</b><small id="setPrinterHint">ESC/POS thermal printer, Bluetooth LE</small></div>
+        <button class="btn sm primary" id="btnConnect" type="button">Connect</button></div>
+      <div class="card-actions"><button class="btn sm" id="btnTest" type="button">Test print</button><button class="btn sm ghost" id="btnTestRaw" type="button">Test via RawBT</button></div>
+      <div class="status" id="setStatus" hidden></div>
+      <label class="f">Paper width
+        <div class="seg" role="radiogroup" aria-label="Paper width">
+          <label><input type="radio" name="paper" id="s-p58" value="58"><span>58 mm · 32 col</span></label>
+          <label><input type="radio" name="paper" id="s-p80" value="80"><span>80 mm · 48 col</span></label>
+        </div>
+      </label>
+      <label class="f">Accents (á, ñ)
+        <div class="seg" role="radiogroup" aria-label="Accent handling">
+          <label><input type="radio" name="accents" id="s-a-strip" value="strip"><span>Remove (safe)</span></label>
+          <label><input type="radio" name="accents" id="s-a-850" value="cp850"><span>Codepage 850</span></label>
+        </div>
+      </label>
+      <div class="setrow"><div><b>Cut paper after each copy</b><small>Only for printers with an auto-cutter</small></div><label class="switch"><input type="checkbox" id="s-cut"><span></span></label></div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title">On the slip</div>
+      <label class="f">Title<input id="s-title" placeholder="VOLANTE DE DEPOSITO"></label>
+      <label class="f">Header line (company, branch)<input id="s-header" placeholder="Optional, printed above the title"></label>
+      <div class="setrow"><div><b>Monto en letras</b><small>“Son: doce mil pesos con 00/100”</small></div><label class="switch"><input type="checkbox" id="s-words"><span></span></label></div>
+      <div class="setrow"><div><b>Signature lines</b><small>Depositante and bank receipt</small></div><label class="switch"><input type="checkbox" id="s-sign"><span></span></label></div>
+      <div class="setrow"><div><b>Print timestamp</b><small>Date and time at the bottom</small></div><label class="switch"><input type="checkbox" id="s-stamp"><span></span></label></div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title">Backup</div>
+      <p class="note">Templates and history live only in this browser. Copy the backup somewhere safe, or paste one here to restore it on another phone.</p>
+      <div class="card-actions"><button class="btn sm" id="btnExport" type="button">Show backup</button><button class="btn sm" id="btnDownload" type="button">Download .json</button></div>
+      <textarea id="backupBox" hidden readonly aria-label="Backup data"></textarea>
+      <div class="card-actions" id="backupCopyRow" hidden><button class="btn sm" id="btnCopyBackup" type="button">Copy backup</button></div>
+      <label class="f">Restore from backup<textarea id="importBox" placeholder="Paste backup JSON here"></textarea></label>
+      <div class="card-actions"><button class="btn sm" id="btnImport" type="button">Restore (merge)</button></div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title">How printing works</div>
+      <p class="note"><b>Bluetooth</b> talks straight to the printer from Chrome on Android. The page must be opened from an <code>https://</code> address, and the printer must support Bluetooth LE (most 58 mm ESC/POS printers do).</p>
+      <p class="note"><b>RawBT</b> hands the slip to the RawBT app on Android, which also handles classic-Bluetooth printers.</p>
+      <p class="note"><b>System print</b> uses the phone's print dialog, for printers with an Android print plugin.</p>
+    </div>
+  </section>
+</main>
+
+<div class="dock">
+  <div class="dock-in">
+    <div class="totalbar" id="totalbar">
+      <div class="tot"><div class="tot-main" id="totMain">RD$ 0.00</div><div class="tot-sub" id="totSub">Efectivo 0.00 · Cheques 0.00</div></div>
+      <button class="btn primary" id="btnPreview" type="button">Preview &amp; print</button>
+    </div>
+    <nav class="tabbar" aria-label="Sections">
+      <button class="tab" data-view="slip" aria-current="page" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h14v18l-2.3-1.6L14.3 21 12 19.4 9.7 21l-2.4-1.6L5 21z"/><path d="M12 7v8M8 11h8"/></svg>New slip</button>
+      <button class="tab" data-view="templates" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="13" height="16" rx="2"/><path d="M8 7h5M8 11h5M20 7v12a2 2 0 0 1-2 2H8"/></svg>Templates</button>
+      <button class="tab" data-view="history" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>Printed</button>
+      <button class="tab" data-view="setup" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M7 14h10v7H7z"/></svg>Printer</button>
+    </nav>
+  </div>
+</div>
+
+<!-- PREVIEW SHEET -->
+<div class="sheet" id="pvSheet" hidden role="dialog" aria-modal="true" aria-labelledby="pvTitle">
+  <div class="sheet-panel">
+    <div class="grab"></div>
+    <div class="sheet-head"><h2 id="pvTitle">Preview</h2><button class="icon-btn" id="pvClose" type="button" aria-label="Close preview">✕</button></div>
+    <div class="status warn" id="pvEmbedded" hidden>You're viewing this inside Claude, which blocks Bluetooth and printing. Open the hosted copy of this page in Chrome on your phone to print.</div>
+    <div class="paper-wrap"><div class="paper" id="paper"></div></div>
+    <div class="setrow"><div><b>Copies</b><small>Original + copia for the bank and your records</small></div>
+      <div class="stepper"><button class="icon-btn" id="cpMinus" type="button" aria-label="Fewer copies">−</button><output id="cpOut">1</output><button class="icon-btn" id="cpPlus" type="button" aria-label="More copies">+</button></div></div>
+    <div class="actions">
+      <button class="btn primary" id="btnBT" type="button">Print via Bluetooth</button>
+      <button class="btn" id="btnRaw" type="button">RawBT app</button>
+      <button class="btn" id="btnSys" type="button">System print</button>
+      <button class="btn" id="btnCopyText" type="button">Copy as text</button>
+      <button class="btn" id="btnToNew" type="button" hidden>Copy to new slip</button>
+    </div>
+    <div class="status" id="pvStatus" hidden></div>
+    <button class="btn block ghost" id="btnDoneNew" type="button" hidden>Done · start a new slip</button>
+  </div>
+</div>
+
+<!-- TEMPLATE EDITOR -->
+<div class="sheet" id="tplSheet" hidden role="dialog" aria-modal="true" aria-labelledby="tplTitle">
+  <div class="sheet-panel">
+    <div class="grab"></div>
+    <div class="sheet-head"><h2 id="tplTitle">Template</h2><button class="icon-btn" id="tplClose" type="button" aria-label="Close">✕</button></div>
+    <form id="tplForm" style="display:flex;flex-direction:column;gap:12px" onsubmit="return false" autocomplete="off">
+      <label class="f">Template name<input id="t-name" placeholder="Ventas Estación Los Alcarrizos"></label>
+      <label class="f">Banco<input id="t-bank" list="banks"></label>
+      <label class="f">Número de cuenta<input id="t-account" class="acct"></label>
+      <label class="f">Titular<input id="t-holder"></label>
+      <div class="row">
+        <label class="f">Tipo<select id="t-accType"><option>Corriente</option><option>Ahorros</option></select></label>
+        <label class="f">Moneda<select id="t-currency"><option>DOP</option><option>USD</option></select></label>
+      </div>
+      <label class="f">Depositante<input id="t-depositor" placeholder="Optional"></label>
+      <label class="f">Concepto<input id="t-concept" placeholder="Optional"></label>
+      <div class="actions" style="grid-template-columns:1fr 1fr">
+        <button class="btn danger" id="tplDelete" type="button">Delete</button>
+        <button class="btn primary" id="tplSave" type="button" style="grid-column:auto;min-height:44px;font-size:14.5px">Save template</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<datalist id="banks"></datalist>
+<div class="toast" id="toast" hidden role="status"></div>
+<div id="printArea" aria-hidden="true"></div>
+
+<script>
+(() => {
+'use strict';
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const KEY = 'volantes.v1';
+const EMBEDDED = (() => { try { return window.self !== window.top; } catch (e) { return true; } })();
+const BANKS = ['Banco Popular Dominicano','Banreservas','Banco BHD','Scotiabank','Banco Santa Cruz','Banco Promerica','Banesco','Banco Caribe','Banco López de Haro','Banco Vimenca','Banco BDI','Banco Lafise','Citibank','Banco Ademi','Asociación Popular (APAP)','Asociación Cibao','Asociación La Nacional'];
+const DEN = { DOP: { bills: [2000,1000,500,200,100,50], coins: [25,10,5,1] }, USD: { bills: [100,50,20,10,5,2,1], coins: [] } };
+const TFIELDS = ['bank','account','accType','holder','currency','depositor','concept'];
+
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const pad2 = n => String(n).padStart(2, '0');
+const today = () => { const d = new Date(); return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); };
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clone = o => JSON.parse(JSON.stringify(o));
+const parseAmt = v => { const n = parseFloat(String(v ?? '').replace(/[^0-9.\-]/g, '')); return isFinite(n) ? n : 0; };
+const toC = v => Math.round(parseAmt(v) * 100);
+const money = c => (c / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const sym = cur => cur === 'USD' ? 'US$' : 'RD$';
+const fmtDate = iso => { if (!iso) return ''; const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}`; };
+
+function blankSlip() {
+  return { id: uid(), date: today(), bank: '', account: '', accType: 'Corriente', holder: '', currency: 'DOP', depositor: '', concept: '', ref: '',
+    cashMode: 'denoms', denoms: { DOP: {}, USD: {} }, loose: '', cashTotal: '', checks: [], templateId: null, example: false };
+}
+const pick = t => { const o = {}; TFIELDS.forEach(k => o[k] = t[k] ?? ''); return o; };
+const defaultSettings = () => ({ paper: 58, copies: 1, accents: 'strip', header: '', title: 'VOLANTE DE DEPOSITO', signatures: true, words: true, stamp: true, cut: false, printerName: '' });
+
+function seed() {
+  const t1 = { id: 'ex1', name: 'Ventas estación (example)', bank: 'Banco Popular Dominicano', account: '000-000000-0', accType: 'Corriente', holder: 'Empresa Ejemplo SRL', currency: 'DOP', depositor: '', concept: 'Depósito ventas en efectivo', example: true };
+  const t2 = { id: 'ex2', name: 'Cuenta dólares (example)', bank: 'Banco BHD', account: '0000000-000-0', accType: 'Ahorros', holder: 'Empresa Ejemplo SRL', currency: 'USD', depositor: '', concept: 'Cheques de clientes', example: true };
+  const s = Object.assign(blankSlip(), pick(t1));
+  s.templateId = 'ex1'; s.example = true; s.depositor = 'Mensajero (example)';
+  s.concept = 'Depósito ventas en efectivo 02/11';
+  s.denoms.DOP = { '2000': '6', '1000': '4', '500': '3', '100': '12' };
+  s.checks = [{ bank: 'Banreservas', number: '004512', amount: '8,750.00' }];
+  return { v: 1, settings: defaultSettings(), templates: [t1, t2], history: [], draft: s };
+}
+
+let S = null;
+try { S = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { S = null; }
+if (!S || !S.settings) S = seed();
+S.settings = Object.assign(defaultSettings(), S.settings);
+S.templates = S.templates || []; S.history = S.history || [];
+let slip = S.draft || blankSlip();
+slip.denoms = slip.denoms || { DOP: {}, USD: {} };
+
+let saveT;
+function persist() { try { S.draft = slip; localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+function save() { clearTimeout(saveT); saveT = setTimeout(persist, 250); }
+
+/* ---------- Spanish amount in words ---------- */
+const SMALL = ['cero','uno','dos','tres','cuatro','cinco','seis','siete','ocho','nueve','diez','once','doce','trece','catorce','quince','dieciséis','diecisiete','dieciocho','diecinueve','veinte','veintiuno','veintidós','veintitrés','veinticuatro','veinticinco','veintiséis','veintisiete','veintiocho','veintinueve'];
+const TENS = ['','','','treinta','cuarenta','cincuenta','sesenta','setenta','ochenta','noventa'];
+const HUND = ['','ciento','doscientos','trescientos','cuatrocientos','quinientos','seiscientos','setecientos','ochocientos','novecientos'];
+function u100(n) {
+  if (n < 30) return n === 1 ? 'un' : n === 21 ? 'veintiún' : SMALL[n];
+  const t = Math.floor(n / 10), u = n % 10;
+  return TENS[t] + (u ? ' y ' + (u === 1 ? 'un' : SMALL[u]) : '');
+}
+function u1000(n) {
+  if (n === 0) return '';
+  if (n === 100) return 'cien';
+  const h = Math.floor(n / 100), r = n % 100;
+  return [h ? HUND[h] : '', r ? u100(r) : ''].filter(Boolean).join(' ');
+}
+function toWords(n) {
+  if (n === 0) return 'cero';
+  const m = Math.floor(n / 1e6), th = Math.floor((n % 1e6) / 1000), r = n % 1000, out = [];
+  if (m) out.push(m === 1 ? 'un millón' : u1000(m) + ' millones');
+  if (th) out.push(th === 1 ? 'mil' : u1000(th) + ' mil');
+  if (r) out.push(u1000(r));
+  return out.join(' ');
+}
+function amountWords(cents, cur) {
+  const n = Math.floor(cents / 100), d = cents % 100;
+  const unit = cur === 'USD' ? (n === 1 ? 'dólar' : 'dólares') : (n === 1 ? 'peso' : 'pesos');
+  const de = n >= 1e6 && n % 1e6 === 0 ? ' de' : '';
+  return (toWords(n) + de + ' ' + unit + ' con ' + pad2(d) + '/100').toUpperCase();
+}
+
+/* ---------- Totals ---------- */
+function calc(sl) {
+  let cash = 0;
+  if (sl.cashMode === 'total') cash = toC(sl.cashTotal);
+  else {
+    const q = sl.denoms[sl.currency] || {}, d = DEN[sl.currency];
+    for (const v of [...d.bills, ...d.coins]) cash += Math.round(v * 100) * (parseInt(q[v]) || 0);
+    cash += toC(sl.loose);
+  }
+  let chk = 0, nChk = 0;
+  for (const c of sl.checks) { const a = toC(c.amount); if (a) { chk += a; nChk++; } }
+  return { cash, chk, nChk, total: cash + chk };
+}
+
+/* ---------- Receipt layout (shared by preview, Bluetooth, RawBT, system print) ---------- */
+const stripAccents = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[¿¡]/g, '');
+function receipt(sl, st, printedAt) {
+  const W = st.paper == 80 ? 48 : 32, cur = sym(sl.currency), L = [];
+  const add = (t, o = {}) => L.push(Object.assign({ t }, o));
+  const rule = (ch = '-') => add(ch.repeat(W));
+  const lr = (a, b, o) => {
+    a = String(a); b = String(b ?? '');
+    if (a.length + b.length + 1 <= W) add(a + ' '.repeat(W - a.length - b.length) + b, o);
+    else { add(a, o); wrap(b, 1, o, true); }
+  };
+  function wrap(text, ind = 0, o = {}, right = false) {
+    const words = String(text || '').split(/\s+/).filter(Boolean), max = W - ind;
+    let line = '';
+    const flush = () => { if (line) add(right ? ' '.repeat(Math.max(0, W - line.length)) + line : ' '.repeat(ind) + line, o); line = ''; };
+    for (let w of words) {
+      while (w.length > max) { flush(); add(' '.repeat(ind) + w.slice(0, max), o); w = w.slice(max); }
+      if (!line) line = w; else if (line.length + 1 + w.length <= max) line += ' ' + w; else { flush(); line = w; }
+    }
+    flush();
+  }
+  const center = (s, w) => { s = s.slice(0, w); const l = Math.floor((w - s.length) / 2); return ' '.repeat(l) + s + ' '.repeat(w - s.length - l); };
+  const { cash, chk, total } = calc(sl);
+
+  if (st.header) wrap(st.header, 0, { c: 1, b: 1 });
+  add(st.title || 'VOLANTE DE DEPOSITO', { c: 1, b: 1, h: 1 });
+  rule();
+  lr('Fecha:', fmtDate(sl.date));
+  lr('Banco:', sl.bank);
+  lr('Cuenta:', sl.account, { b: 1 });
+  lr('Tipo:', sl.accType);
+  lr('Moneda:', sl.currency);
+  add('Titular:');
+  wrap(sl.holder || '-', 1, { b: 1 });
+  rule();
+  if (cash > 0) {
+    add('EFECTIVO', { b: 1 });
+    if (sl.cashMode === 'denoms') {
+      const q = sl.denoms[sl.currency] || {}, d = DEN[sl.currency];
+      for (const v of [...d.bills, ...d.coins]) {
+        const n = parseInt(q[v]) || 0;
+        if (n) lr(` ${v.toLocaleString('en-US')} x ${n}`, money(Math.round(v * 100) * n));
+      }
+      if (toC(sl.loose)) lr(' Monedas/otros', money(toC(sl.loose)));
+    }
+    lr(' Total efectivo', money(cash), { b: 1 });
+  }
+  if (chk > 0) {
+    add('CHEQUES', { b: 1 });
+    for (const c of sl.checks) {
+      const a = toC(c.amount); if (!a) continue;
+      const amt = money(a), room = W - amt.length - 1;
+      let left = ' ' + [c.bank || 'Cheque', c.number ? '#' + c.number : ''].filter(Boolean).join(' ');
+      if (left.length > room) left = left.slice(0, room);
+      lr(left, amt);
+    }
+    lr(' Total cheques', money(chk), { b: 1 });
+  }
+  rule('=');
+  lr('TOTAL ' + cur, money(total), { b: 1, h: 1 });
+  rule('=');
+  if (st.words) wrap('Son: ' + amountWords(total, sl.currency));
+  if (sl.concept) { add('Concepto:'); wrap(sl.concept, 1); }
+  if (sl.ref) lr('Ref.:', sl.ref);
+  if (sl.depositor) lr('Depositante:', sl.depositor);
+  if (st.signatures) {
+    const a = Math.floor((W - 2) / 2), b = W - 2 - a;
+    add(''); add(''); add('');
+    add('_'.repeat(a) + '  ' + '_'.repeat(b));
+    add(center('Depositante', a) + '  ' + center('Recibido', b));
+  }
+  if (st.stamp) {
+    const d = printedAt ? new Date(printedAt) : new Date();
+    add(''); add(`Impreso ${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}/${d.getFullYear()} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`, { c: 1 });
+  }
+  const lines = st.accents === 'strip' ? L.map(l => Object.assign({}, l, { t: stripAccents(l.t) })) : L;
+  return { lines, W };
+}
+
+/* ---------- ESC/POS ---------- */
+const CP850 = { 'á':0xA0,'é':0x82,'í':0xA1,'ó':0xA2,'ú':0xA3,'ñ':0xA4,'Ñ':0xA5,'Á':0xB5,'É':0x90,'Í':0xD6,'Ó':0xE0,'Ú':0xE9,'ü':0x81,'Ü':0x9A,'¿':0xA8,'¡':0xAD,'°':0xF8 };
+function encode(text, st) {
+  const out = [];
+  for (const ch of text.normalize('NFC')) {
+    const c = ch.charCodeAt(0);
+    if (c < 128) out.push(c);
+    else if (st.accents === 'cp850' && CP850[ch] != null) out.push(CP850[ch]);
+    else { const s = stripAccents(ch); out.push(s && s.charCodeAt(0) < 128 ? s.charCodeAt(0) : 0x3F); }
+  }
+  return out;
+}
+function escpos(sl, st, copies, at) {
+  const { lines } = receipt(sl, st, at), b = [];
+  for (let i = 0; i < copies; i++) {
+    b.push(0x1B, 0x40, 0x1C, 0x2E); // reset, then FS . = leave Chinese (GB2312) mode so bytes >127 are single characters
+    if (st.accents === 'cp850') b.push(0x1B, 0x74, 0x02);
+    if (copies > 1) { b.push(0x1B, 0x61, 1); b.push(...encode(i === 0 ? 'ORIGINAL' : 'COPIA', st), 0x0A); }
+    for (const l of lines) {
+      b.push(0x1B, 0x61, l.c ? 1 : 0, 0x1B, 0x45, l.b ? 1 : 0, 0x1D, 0x21, l.h ? 0x01 : 0x00);
+      b.push(...encode(l.t, st), 0x0A);
+    }
+    b.push(0x1B, 0x45, 0, 0x1D, 0x21, 0, 0x1B, 0x61, 0, 0x1B, 0x64, 4);
+    if (st.cut) b.push(0x1D, 0x56, 0x42, 0x00);
+  }
+  return new Uint8Array(b);
+}
+
+/* Test page: ruler, bold/tall text, and the same accented words in CP850 and stripped */
+function testBytes(st) {
+  const W = st.paper == 80 ? 48 : 32, b = [];
+  const asc = { accents: 'strip' }, c850 = { accents: 'cp850' };
+  const line = (t, o = {}, enc = asc) => {
+    b.push(0x1B, 0x61, o.c ? 1 : 0, 0x1B, 0x45, o.b ? 1 : 0, 0x1D, 0x21, o.h ? 0x01 : 0x00);
+    b.push(...encode(t, enc), 0x0A);
+  };
+  const lr = (a, z, o) => line(a + ' '.repeat(Math.max(1, W - a.length - z.length)) + z, o);
+  b.push(0x1B, 0x40, 0x1C, 0x2E);
+  line('PRUEBA DE IMPRESION', { c: 1, b: 1, h: 1 });
+  line(`Volantes - ${st.paper} mm - ${W} col`, { c: 1 });
+  if (st.printerName) line(st.printerName, { c: 1 });
+  line('-'.repeat(W));
+  line('1234567890'.repeat(Math.ceil(W / 10)).slice(0, W));
+  line('|' + '-'.repeat(W - 2) + '|');
+  line('Texto normal');
+  line('Texto en negrita', { b: 1 });
+  line('Texto alto', { h: 1 });
+  lr('TOTAL RD$', '18,000.00', { b: 1, h: 1 });
+  line('-'.repeat(W));
+  line('Acentos, codepage 850:');
+  b.push(0x1B, 0x74, 0x02);
+  line(' DEPÓSITO AÑO Ñ ü', {}, c850);
+  line(' á é í ó ú ¿ ¡', {}, c850);
+  b.push(0x1B, 0x74, 0x00);
+  line('Sin acentos:');
+  line(' DEPOSITO ANO N u');
+  line('-'.repeat(W));
+  line('Si la linea 850 se ve bien,');
+  line('elige "Codepage 850" en la app.');
+  line('Si sale con simbolos raros,');
+  line('deja "Remove (safe)".');
+  b.push(0x1B, 0x45, 0, 0x1D, 0x21, 0, 0x1B, 0x61, 0, 0x1B, 0x64, 4);
+  return new Uint8Array(b);
+}
+function rawbtLaunch(bytes) {
+  if (EMBEDDED) return ['RawBT can only be opened from the hosted page in Chrome on Android.', 'warn'];
+  if (!/Android/i.test(navigator.userAgent)) return ['RawBT is an Android app. On this device use Bluetooth or System print.', 'warn'];
+  let bin = ''; bytes.forEach(x => bin += String.fromCharCode(x));
+  window.location.href = 'intent:base64,' + btoa(bin) + '#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;';
+  return ['Opened RawBT. If nothing happened, install “RawBT” from Google Play and pair the printer there.', 'ok'];
+}
+
+/* ---------- Web Bluetooth ---------- */
+const BT_SERVICES = [0x18F0, 0xFFE0, 0xFF00, 0xFEE7, 0xAE30, 0xAE00, 0xFFF0,
+  'e7810a71-73ae-499d-8c15-faa9aef0c3f2', '49535343-fe7d-4ae5-8fa9-9fafd205e455'];
+const bt = { device: null, ch: null, chunk: 100 };
+async function findWritable(server) {
+  const services = await server.getPrimaryServices();
+  for (const s of services) {
+    let chars = [];
+    try { chars = await s.getCharacteristics(); } catch (e) { continue; }
+    const c = chars.find(c => c.properties.writeWithoutResponse) || chars.find(c => c.properties.write);
+    if (c) return c;
+  }
+  throw new Error('NO_WRITE');
+}
+async function btConnect() {
+  if (!navigator.bluetooth) throw new Error('NO_API');
+  const device = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: BT_SERVICES });
+  device.addEventListener('gattserverdisconnected', () => { bt.ch = null; renderPrinter(); });
+  const server = await device.gatt.connect();
+  bt.ch = await findWritable(server);
+  bt.device = device; bt.chunk = 100;
+  S.settings.printerName = device.name || 'Bluetooth printer'; persist(); renderPrinter();
+}
+async function btEnsure() {
+  if (bt.ch && bt.device?.gatt?.connected) return;
+  if (bt.device) { const server = await bt.device.gatt.connect(); bt.ch = await findWritable(server); renderPrinter(); return; }
+  await btConnect();
+}
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function btWrite(bytes) {
+  await btEnsure();
+  const ch = bt.ch;
+  const w = p => ch.properties.writeWithoutResponse && ch.writeValueWithoutResponse ? ch.writeValueWithoutResponse(p)
+    : ch.writeValueWithResponse ? ch.writeValueWithResponse(p) : ch.writeValue(p);
+  for (let i = 0; i < bytes.length;) {
+    const part = bytes.slice(i, i + bt.chunk);
+    try { await w(part); i += part.length; await sleep(bt.chunk > 20 ? 25 : 8); }
+    catch (e) { if (bt.chunk > 20) { bt.chunk = 20; continue; } throw e; }
+  }
+}
+function btError(e) {
+  const m = String(e && (e.message || e)), n = e && e.name;
+  if (m === 'NO_API') return EMBEDDED ? 'Bluetooth is blocked inside the Claude viewer. Open the hosted page in Chrome on Android.' : 'This browser has no Web Bluetooth (iPhone/Safari and Firefox don\'t). Use Chrome on Android, or the RawBT app.';
+  if (n === 'NotFoundError') return /cancel/i.test(m) ? 'No printer chosen.' : 'No printer found. Turn the printer on and make sure Bluetooth and Location are enabled on the phone.';
+  if (n === 'SecurityError' || /permissions policy|disallowed|not allowed/i.test(m)) return EMBEDDED ? 'Bluetooth is blocked inside the Claude viewer. Open the hosted page in Chrome on Android.' : 'Bluetooth needs the page to be opened from an https:// address.';
+  if (m === 'NO_WRITE') return 'Connected, but this device has no printable channel. It may be a classic-Bluetooth printer: use the RawBT app instead.';
+  if (n === 'NetworkError') return 'Lost the connection to the printer. Check it is on and close by, then try again.';
+  return 'Printing failed: ' + m;
+}
+
+/* ---------- Rendering: slip form ---------- */
+function fillForm() {
+  ['bank','account','holder','date','ref','depositor','concept','cashTotal'].forEach(k => { const el = $('#f-' + k); if (el) el.value = slip[k] ?? ''; });
+  $$('input[name=accType]').forEach(r => r.checked = r.value === slip.accType);
+  $$('input[name=currency]').forEach(r => r.checked = r.value === slip.currency);
+  $$('input[name=cashMode]').forEach(r => r.checked = r.value === slip.cashMode);
+  renderDenoms(); renderChecks(); syncCashMode(); renderStrip();
+  $('#exampleBanner').hidden = !slip.example;
+  updateTotals();
+}
+function syncCashMode() {
+  const tot = slip.cashMode === 'total';
+  $('#denoms').hidden = tot; $('#cashTotalWrap').hidden = !tot;
+}
+function renderDenoms() {
+  const cur = slip.currency, d = DEN[cur], q = slip.denoms[cur] || (slip.denoms[cur] = {}), s = sym(cur);
+  const row = (v, kind) => `<div class="den"><span class="den-face ${kind}">${s} ${v.toLocaleString('en-US')}</span><span class="den-x" aria-hidden="true">×</span><input id="den-${cur}-${v}" data-den="${v}" type="text" inputmode="numeric" placeholder="0" value="${esc(q[v] || '')}" aria-label="Cantidad de ${s} ${v}"><span class="den-sum" data-sum="${v}">0.00</span></div>`;
+  let h = `<p class="den-group">Billetes</p>` + d.bills.map(v => row(v, 'bill')).join('');
+  if (d.coins.length) h += `<p class="den-group">Monedas</p>` + d.coins.map(v => row(v, 'coin')).join('');
+  h += `<div class="den loose"><span class="den-face">Otros / sueltos (monto)</span><input id="f-loose-${cur}" data-k="loose" class="num money" inputmode="decimal" placeholder="0.00" value="${esc(slip.loose || '')}" aria-label="Loose cash amount"></div>`;
+  $('#denoms').innerHTML = h;
+}
+function renderChecks() {
+  $('#checks').innerHTML = slip.checks.length ? slip.checks.map((c, i) => `
+    <div class="check">
+      <div class="check-head"><span>Cheque ${i + 1}</span><button type="button" class="icon-btn" data-rm="${i}" aria-label="Remove check ${i + 1}">✕</button></div>
+      <div class="check-grid">
+        <label class="f wide">Banco emisor<input id="ck-${i}-bank" list="banks" data-ci="${i}" data-cf="bank" value="${esc(c.bank)}"></label>
+        <label class="f">No. cheque<input id="ck-${i}-number" class="num" inputmode="numeric" data-ci="${i}" data-cf="number" value="${esc(c.number)}"></label>
+        <label class="f">Monto<input id="ck-${i}-amount" class="num money" inputmode="decimal" placeholder="0.00" data-ci="${i}" data-cf="amount" value="${esc(c.amount)}"></label>
+      </div>
+    </div>`).join('') : '<p class="empty-line">No checks in this deposit.</p>';
+}
+function updateTotals() {
+  const { cash, chk, nChk, total } = calc(slip), s = sym(slip.currency);
+  const q = slip.denoms[slip.currency] || {};
+  $$('[data-sum]').forEach(el => {
+    const v = parseFloat(el.dataset.sum), n = parseInt(q[el.dataset.sum]) || 0;
+    el.textContent = money(Math.round(v * 100) * n); el.classList.toggle('has', n > 0);
+  });
+  $('#cashSub').textContent = s + ' ' + money(cash);
+  $('#chkSub').textContent = s + ' ' + money(chk) + (nChk ? ` · ${nChk}` : '');
+  $('#totMain').textContent = s + ' ' + money(total);
+  $('#totSub').textContent = `Efectivo ${money(cash)} · Cheques ${money(chk)}`;
+}
+function renderStrip() {
+  const chips = S.templates.map(t => `<button type="button" class="tchip${slip.templateId === t.id ? ' active' : ''}" data-tpl="${esc(t.id)}"><b>${esc(t.name)}</b><small>${esc(t.currency)} · ${esc(t.account || '—')}</small></button>`).join('');
+  $('#tplStrip').innerHTML = chips + `<button type="button" class="tchip add" id="chipSaveTpl">+ Save as template</button>`;
+}
+function markEdited() { if (slip.example) { slip.example = false; $('#exampleBanner').hidden = true; } }
+
+$('#slipForm').addEventListener('input', e => {
+  const t = e.target;
+  if (t.name === 'cashMode') { slip.cashMode = t.value; syncCashMode(); }
+  else if (t.dataset.k) {
+    slip[t.dataset.k] = t.value;
+    if (t.dataset.k === 'currency') renderDenoms();
+  } else if (t.dataset.den) {
+    const clean = t.value.replace(/\D/g, ''); if (clean !== t.value) t.value = clean;
+    (slip.denoms[slip.currency] ||= {})[t.dataset.den] = clean;
+  } else if (t.dataset.ci != null) { slip.checks[+t.dataset.ci][t.dataset.cf] = t.value; }
+  markEdited(); updateTotals(); save();
+});
+$('#slipForm').addEventListener('change', e => {
+  const t = e.target;
+  if (t.classList.contains('money') && t.value.trim()) {
+    t.value = money(toC(t.value));
+    if (t.dataset.k) slip[t.dataset.k] = t.value; else if (t.dataset.ci != null) slip.checks[+t.dataset.ci].amount = t.value;
+    save();
+  }
+});
+$('#checks').addEventListener('click', e => {
+  const b = e.target.closest('[data-rm]'); if (!b) return;
+  slip.checks.splice(+b.dataset.rm, 1); renderChecks(); updateTotals(); save();
+});
+$('#btnAddCheck').addEventListener('click', () => {
+  slip.checks.push({ bank: '', number: '', amount: '' }); renderChecks(); updateTotals(); save();
+  const i = slip.checks.length - 1; $(`#ck-${i}-bank`)?.focus();
+});
+$('#tplStrip').addEventListener('click', e => {
+  if (e.target.closest('#chipSaveTpl')) { openTpl(null, pick(slip)); return; }
+  const c = e.target.closest('[data-tpl]'); if (!c) return;
+  const t = S.templates.find(x => x.id === c.dataset.tpl); if (!t) return;
+  applyTemplate(t);
+});
+function applyTemplate(t) {
+  const wasExample = slip.example;
+  Object.assign(slip, pick(t)); slip.templateId = t.id;
+  if (wasExample) { slip.denoms = { DOP: {}, USD: {} }; slip.loose = ''; slip.cashTotal = ''; slip.checks = []; slip.ref = ''; }
+  slip.example = false;
+  fillForm(); save(); toast(`Loaded “${t.name}”`);
+}
+$('#btnClear').addEventListener('click', e => armed(e.currentTarget, 'Tap again to clear', () => {
+  slip = blankSlip(); fillForm(); persist(); toast('New blank slip');
+}));
+
+/* ---------- Two-tap confirm ---------- */
+function armed(btn, label, fn) {
+  if (btn.dataset.armed) { delete btn.dataset.armed; btn.textContent = btn.dataset.orig; fn(); return; }
+  btn.dataset.orig = btn.textContent; btn.dataset.armed = '1'; btn.textContent = label;
+  setTimeout(() => { if (btn.dataset.armed) { delete btn.dataset.armed; btn.textContent = btn.dataset.orig; } }, 3500);
+}
+let toastT;
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 2200); }
+
+/* ---------- Views ---------- */
+let view = 'slip';
+function show(v) {
+  view = v;
+  $$('.tab').forEach(t => { if (t.dataset.view === v) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); });
+  ['slip', 'templates', 'history', 'setup'].forEach(k => $('#view-' + k).hidden = k !== v);
+  $('#totalbar').hidden = v !== 'slip';
+  $('#main').classList.toggle('no-total', v !== 'slip');
+  document.documentElement.style.setProperty('--dock-h', v === 'slip' ? '136px' : '68px');
+  if (v === 'templates') renderTplList();
+  if (v === 'history') renderHist();
+  if (v === 'setup') fillSettings();
+  window.scrollTo(0, 0);
+}
+$$('.tab').forEach(t => t.addEventListener('click', () => show(t.dataset.view)));
+$('#printerChip').addEventListener('click', () => show('setup'));
+
+/* ---------- Templates ---------- */
+let editingTpl = null;
+function renderTplList() {
+  $('#tplList').innerHTML = S.templates.length ? S.templates.map(t => `
+    <div class="card">
+      <div class="card-top"><h3>${esc(t.name)}</h3>${t.example ? '<span class="badge ex">Example</span>' : `<span class="badge">${esc(t.currency)}</span>`}</div>
+      <div class="meta">${esc(t.bank || '—')} · ${esc(t.accType)}<br>${esc(t.account || '—')} · ${esc(t.holder || '—')}${t.concept ? '<br>' + esc(t.concept) : ''}</div>
+      <div class="card-actions"><button class="btn sm primary" data-use="${esc(t.id)}" type="button">Use for new slip</button><button class="btn sm" data-edit="${esc(t.id)}" type="button">Edit</button></div>
+    </div>`).join('') : '<div class="empty">No templates yet. Fill a slip and tap “Save as template”, or tap + New.</div>';
+}
+$('#tplList').addEventListener('click', e => {
+  const u = e.target.closest('[data-use]'), ed = e.target.closest('[data-edit]');
+  if (u) { const t = S.templates.find(x => x.id === u.dataset.use); slip = blankSlip(); Object.assign(slip, pick(t)); slip.templateId = t.id; fillForm(); persist(); show('slip'); toast(`New slip from “${t.name}”`); }
+  if (ed) { const t = S.templates.find(x => x.id === ed.dataset.edit); openTpl(t, t); }
+});
+$('#btnNewTpl').addEventListener('click', () => openTpl(null, { accType: 'Corriente', currency: 'DOP' }));
+function openTpl(t, data) {
+  editingTpl = t;
+  $('#tplTitle').textContent = t ? 'Edit template' : 'New template';
+  $('#t-name').value = t ? t.name : '';
+  TFIELDS.forEach(k => { $('#t-' + k).value = data[k] ?? ''; });
+  if (!$('#t-accType').value) $('#t-accType').value = 'Corriente';
+  if (!$('#t-currency').value) $('#t-currency').value = 'DOP';
+  $('#tplDelete').hidden = !t;
+  $('#tplSheet').hidden = false; setTimeout(() => $('#t-name').focus(), 50);
+}
+const closeTpl = () => { $('#tplSheet').hidden = true; editingTpl = null; };
+$('#tplClose').addEventListener('click', closeTpl);
+$('#tplSheet').addEventListener('click', e => { if (e.target.id === 'tplSheet') closeTpl(); });
+$('#tplSave').addEventListener('click', () => {
+  const name = $('#t-name').value.trim();
+  if (!name) { $('#t-name').focus(); toast('Give the template a name'); return; }
+  const data = { name }; TFIELDS.forEach(k => data[k] = $('#t-' + k).value.trim());
+  if (editingTpl) { Object.assign(editingTpl, data); editingTpl.example = false; }
+  else { const t = Object.assign({ id: uid() }, data); S.templates.unshift(t); if (view === 'slip') slip.templateId = t.id; }
+  persist(); closeTpl(); renderStrip(); if (view === 'templates') renderTplList(); toast('Template saved');
+});
+$('#tplDelete').addEventListener('click', e => armed(e.currentTarget, 'Tap again to delete', () => {
+  S.templates = S.templates.filter(x => x !== editingTpl);
+  if (slip.templateId === editingTpl?.id) slip.templateId = null;
+  persist(); closeTpl(); renderStrip(); renderTplList(); toast('Template deleted');
+}));
+
+/* ---------- History ---------- */
+function renderHist() {
+  if (!S.history.length) { $('#histList').innerHTML = '<div class="empty">Nothing printed yet. Slips appear here after you print them.</div>'; return; }
+  let last = '', h = '';
+  for (const e of S.history) {
+    const d = new Date(e.at), day = d.toLocaleDateString('es-DO', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+    if (day !== last) { h += `<p class="day">${esc(day)}</p>`; last = day; }
+    h += `<button class="card hist" type="button" data-h="${esc(e.id)}">
+      <div class="card-top"><h3>${esc(e.slip.holder || e.slip.bank || 'Depósito')}</h3><span class="amt">${sym(e.slip.currency)} ${money(e.total)}</span></div>
+      <div class="meta">${esc(e.slip.bank)} · ${esc(e.slip.account)}<br>${pad2(d.getHours())}:${pad2(d.getMinutes())} · ${esc(e.method)}${e.count > 1 ? ` · printed ${e.count}×` : ''}${e.slip.concept ? ' · ' + esc(e.slip.concept) : ''}</div>
+    </button>`;
+  }
+  $('#histList').innerHTML = h;
+}
+$('#histList').addEventListener('click', e => {
+  const b = e.target.closest('[data-h]'); if (!b) return;
+  const h = S.history.find(x => x.id === b.dataset.h); if (h) openPreview(h.slip, h);
+});
+$('#btnClearHist').addEventListener('click', e => { if (!S.history.length) return; armed(e.currentTarget, 'Tap again to clear', () => { S.history = []; persist(); renderHist(); }); });
+function record(method) {
+  if (!pv) return;
+  const sl = clone(pv.slip), total = calc(sl).total;
+  let h = S.history.find(x => x.slip.id === sl.id);
+  if (h) { h.at = Date.now(); h.method = method; h.slip = sl; h.total = total; h.count = (h.count || 1) + 1; S.history = [h, ...S.history.filter(x => x !== h)]; }
+  else S.history.unshift({ id: uid(), at: Date.now(), method, slip: sl, total, count: 1 });
+  S.history = S.history.slice(0, 300);
+  persist();
+  if (!pv.hist) $('#btnDoneNew').hidden = false;
+}
+
+/* ---------- Preview & print ---------- */
+let pv = null;
+function openPreview(sl, hist) {
+  pv = { slip: clone(sl), hist: hist || null };
+  $('#pvTitle').textContent = hist ? 'Reprint' : 'Preview';
+  $('#pvEmbedded').hidden = !EMBEDDED;
+  $('#btnToNew').hidden = !hist;
+  $('#btnDoneNew').hidden = true;
+  setStatus('#pvStatus', '');
+  const warn = [];
+  if (!sl.account) warn.push('the account number is empty');
+  if (!calc(sl).total) warn.push('the total is 0.00');
+  if (warn.length) setStatus('#pvStatus', 'Check before printing: ' + warn.join(' and ') + '.', 'warn');
+  renderPaper(); renderPrinter();
+  $('#pvSheet').hidden = false;
+}
+function renderPaper() {
+  const st = S.settings, { lines, W } = receipt(pv.slip, st);
+  const p = $('#paper'); p.style.setProperty('--cols', W);
+  const copies = st.copies;
+  $('#cpOut').textContent = copies;
+  p.innerHTML = lines.map(l => `<div class="ln${l.c ? ' c' : ''}${l.b ? ' b' : ''}${l.h ? ' h' : ''}">${esc(l.t) || ' '}</div>`).join('')
+    + (copies > 1 ? `<div class="ln cut">${'- '.repeat(W / 2)}</div><div class="ln c">+ ${copies - 1} ${copies - 1 === 1 ? 'copia' : 'copias'}</div>` : '');
+}
+const closePv = () => { $('#pvSheet').hidden = true; pv = null; };
+$('#pvClose').addEventListener('click', closePv);
+$('#pvSheet').addEventListener('click', e => { if (e.target.id === 'pvSheet') closePv(); });
+$('#btnPreview').addEventListener('click', () => openPreview(slip));
+$('#cpMinus').addEventListener('click', () => { S.settings.copies = Math.max(1, S.settings.copies - 1); persist(); renderPaper(); });
+$('#cpPlus').addEventListener('click', () => { S.settings.copies = Math.min(5, S.settings.copies + 1); persist(); renderPaper(); });
+function setStatus(sel, msg, kind) { const el = $(sel); el.hidden = !msg; el.textContent = msg; el.className = 'status' + (kind ? ' ' + kind : ''); }
+
+$('#btnBT').addEventListener('click', async e => {
+  const btn = e.currentTarget; btn.disabled = true;
+  setStatus('#pvStatus', bt.ch ? 'Sending to printer…' : 'Choose your printer in the list…');
+  try {
+    const bytes = escpos(pv.slip, S.settings, S.settings.copies);
+    await btWrite(bytes);
+    setStatus('#pvStatus', `Sent to ${S.settings.printerName || 'printer'}.`, 'ok');
+    record('Bluetooth');
+  } catch (err) { setStatus('#pvStatus', btError(err), 'err'); }
+  btn.disabled = false;
+});
+$('#btnRaw').addEventListener('click', () => {
+  const [msg, kind] = rawbtLaunch(escpos(pv.slip, S.settings, S.settings.copies));
+  setStatus('#pvStatus', msg, kind);
+  if (kind === 'ok') record('RawBT');
+});
+$('#btnSys').addEventListener('click', () => {
+  const st = S.settings, { lines } = receipt(pv.slip, st);
+  const one = lines.map(l => `<div class="ln" style="${l.c ? 'text-align:center;' : ''}${l.b ? 'font-weight:600;' : ''}${l.h ? 'font-size:1.25em;' : ''}white-space:pre">${esc(l.t) || ' '}</div>`).join('');
+  let h = '';
+  for (let i = 0; i < st.copies; i++) h += `<div class="pg">${st.copies > 1 ? `<div class="ln" style="text-align:center">${i ? 'COPIA' : 'ORIGINAL'}</div>` : ''}${one}</div>`;
+  $('#printArea').innerHTML = h;
+  $('#pageStyle').textContent = `@page{size:${st.paper}mm auto;margin:2mm}#printArea{width:${st.paper - 4}mm}`;
+  if (EMBEDDED) { setStatus('#pvStatus', 'Printing is blocked inside the Claude viewer. Open the hosted page on your phone.', 'warn'); return; }
+  window.print();
+  record('System print');
+});
+$('#btnCopyText').addEventListener('click', async () => {
+  const text = receipt(pv.slip, S.settings).lines.map(l => l.t).join('\n');
+  try { await navigator.clipboard.writeText(text); setStatus('#pvStatus', 'Copied. Paste it into any printer app or a message.', 'ok'); }
+  catch (e) { setStatus('#pvStatus', 'Copy was blocked here. Long-press the slip preview to select the text.', 'warn'); }
+});
+$('#btnToNew').addEventListener('click', () => {
+  const s = clone(pv.slip); s.id = uid(); s.date = today(); s.example = false;
+  slip = s; persist(); closePv(); fillForm(); show('slip'); toast('Copied into a new slip');
+});
+$('#btnDoneNew').addEventListener('click', () => {
+  const keep = slip.templateId ? S.templates.find(t => t.id === slip.templateId) : null;
+  slip = blankSlip(); if (keep) { Object.assign(slip, pick(keep)); slip.templateId = keep.id; }
+  persist(); closePv(); fillForm(); toast(keep ? `New slip from “${keep.name}”` : 'New blank slip');
+});
+
+/* ---------- Printer & settings ---------- */
+function renderPrinter() {
+  const on = !!(bt.ch && bt.device?.gatt?.connected), name = S.settings.printerName;
+  $('#printerChip').classList.toggle('on', on);
+  $('#printerChipText').textContent = on ? name : name ? name + ' · off' : 'No printer';
+  $('#setPrinterName').textContent = on ? name : name ? name + ' (not connected)' : 'Not connected';
+  $('#setPrinterHint').textContent = on ? 'Connected. Ready to print.' : name ? 'It reconnects when you print.' : 'ESC/POS thermal printer, Bluetooth LE';
+  $('#btnConnect').textContent = on ? 'Disconnect' : name ? 'Change' : 'Connect';
+  $('#btnBT').textContent = on ? `Print on ${name}` : 'Print via Bluetooth';
+}
+$('#btnConnect').addEventListener('click', async () => {
+  if (bt.ch && bt.device?.gatt?.connected) { bt.device.gatt.disconnect(); bt.ch = null; renderPrinter(); return; }
+  setStatus('#setStatus', 'Choose your printer in the list…');
+  try { bt.device = null; await btConnect(); setStatus('#setStatus', 'Connected to ' + S.settings.printerName + '.', 'ok'); }
+  catch (e) { setStatus('#setStatus', btError(e), 'err'); }
+});
+$('#btnTest').addEventListener('click', async e => {
+  const btn = e.currentTarget; btn.disabled = true;
+  setStatus('#setStatus', bt.ch ? 'Sending test page…' : 'Choose your printer in the list…');
+  try { await btWrite(testBytes(S.settings)); setStatus('#setStatus', `Test page sent to ${S.settings.printerName || 'printer'}. Compare the two accent lines.`, 'ok'); }
+  catch (err) { setStatus('#setStatus', btError(err), 'err'); }
+  btn.disabled = false;
+});
+$('#btnTestRaw').addEventListener('click', () => { const [m, k] = rawbtLaunch(testBytes(S.settings)); setStatus('#setStatus', m, k); });
+function fillSettings() {
+  const st = S.settings;
+  $$('input[name=paper]').forEach(r => r.checked = r.value == st.paper);
+  $$('input[name=accents]').forEach(r => r.checked = r.value === st.accents);
+  $('#s-cut').checked = st.cut; $('#s-words').checked = st.words; $('#s-sign').checked = st.signatures; $('#s-stamp').checked = st.stamp;
+  $('#s-title').value = st.title; $('#s-header').value = st.header;
+  renderPrinter();
+}
+$('#view-setup').addEventListener('input', e => {
+  const t = e.target, st = S.settings;
+  if (t.name === 'paper') st.paper = +t.value;
+  else if (t.name === 'accents') st.accents = t.value;
+  else if (t.id === 's-cut') st.cut = t.checked;
+  else if (t.id === 's-words') st.words = t.checked;
+  else if (t.id === 's-sign') st.signatures = t.checked;
+  else if (t.id === 's-stamp') st.stamp = t.checked;
+  else if (t.id === 's-title') st.title = t.value;
+  else if (t.id === 's-header') st.header = t.value;
+  else return;
+  save();
+});
+
+/* ---------- Backup ---------- */
+const backupJSON = () => JSON.stringify({ app: 'volantes', v: 1, exportedAt: new Date().toISOString(), settings: S.settings, templates: S.templates, history: S.history }, null, 1);
+$('#btnExport').addEventListener('click', () => { const b = $('#backupBox'); b.value = backupJSON(); b.hidden = false; $('#backupCopyRow').hidden = false; });
+$('#btnCopyBackup').addEventListener('click', async () => {
+  const b = $('#backupBox');
+  try { await navigator.clipboard.writeText(b.value); toast('Backup copied'); } catch (e) { b.focus(); b.select(); toast('Select all and copy'); }
+});
+$('#btnDownload').addEventListener('click', () => {
+  if (EMBEDDED) { $('#btnExport').click(); toast('Downloads are blocked here. Copy the backup instead.'); return; }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([backupJSON()], { type: 'application/json' }));
+  a.download = `volantes-backup-${today()}.json`; document.body.appendChild(a); a.click(); a.remove();
+});
+$('#btnImport').addEventListener('click', () => {
+  let d; try { d = JSON.parse($('#importBox').value); } catch (e) { toast('That is not a valid backup'); return; }
+  if (!d || d.app !== 'volantes') { toast('That is not a Volantes backup'); return; }
+  const ids = new Set(S.templates.map(t => t.id)); let nt = 0, nh = 0;
+  (d.templates || []).forEach(t => { if (!ids.has(t.id)) { S.templates.push(t); nt++; } });
+  const hids = new Set(S.history.map(h => h.id));
+  (d.history || []).forEach(h => { if (!hids.has(h.id)) { S.history.push(h); nh++; } });
+  S.history.sort((a, b) => b.at - a.at);
+  if (d.settings) S.settings = Object.assign(defaultSettings(), d.settings, { printerName: S.settings.printerName });
+  persist(); fillSettings(); renderStrip(); $('#importBox').value = '';
+  toast(`Restored ${nt} template${nt === 1 ? '' : 's'} and ${nh} printed slip${nh === 1 ? '' : 's'}`);
+});
+
+/* ---------- Boot ---------- */
+$('#banks').innerHTML = BANKS.map(b => `<option value="${esc(b)}"></option>`).join('');
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { if (!$('#tplSheet').hidden) closeTpl(); else if (!$('#pvSheet').hidden) closePv(); } });
+fillForm(); renderPrinter(); show('slip');
+})();
+</script>
