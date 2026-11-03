@@ -668,33 +668,63 @@ function rawbtLaunch(bytes) {
 const BT_SERVICES = [0x18F0, 0xFFE0, 0xFF00, 0xFEE7, 0xAE30, 0xAE00, 0xFFF0,
   'e7810a71-73ae-499d-8c15-faa9aef0c3f2', '49535343-fe7d-4ae5-8fa9-9fafd205e455'];
 const bt = { device: null, ch: null, chunk: 100 };
+// Known print channels (service → characteristic), most common first. These printers also expose
+// settings/OTA channels, so never just take "the first writable one": the order can change per connection.
+const BT_PRINT_CHANNELS = [
+  [0x18F0, 0x2AF1],
+  ['e7810a71-73ae-499d-8c15-faa9aef0c3f2', 'bef8d6c9-9c21-4c9e-b632-bd58c1009f9f'],
+  ['49535343-fe7d-4ae5-8fa9-9fafd205e455', '49535343-8841-43f4-a8d4-ecbe34729bb3'],
+  [0xFFE0, 0xFFE1], [0xFF00, 0xFF02], [0xAE30, 0xAE01], [0xFFF0, 0xFFF2]
+];
+const withTimeout = (p, ms, code) => { let t; return Promise.race([p, new Promise((_, rej) => { t = setTimeout(() => rej(new Error(code)), ms); })]).finally(() => clearTimeout(t)); };
 async function findWritable(server) {
-  const services = await server.getPrimaryServices();
-  for (const s of services) {
-    let chars = [];
-    try { chars = await s.getCharacteristics(); } catch (e) { continue; }
-    const c = chars.find(c => c.properties.writeWithoutResponse) || chars.find(c => c.properties.write);
-    if (c) return c;
+  for (const [s, c] of BT_PRINT_CHANNELS) {
+    try { const ch = await (await server.getPrimaryService(s)).getCharacteristic(c); if (ch.properties.write || ch.properties.writeWithoutResponse) return ch; } catch (e) {}
+  }
+  // Unknown model: fall back to the first writable channel in the listed service order
+  for (const s of BT_SERVICES) {
+    try {
+      const chars = await (await server.getPrimaryService(s)).getCharacteristics();
+      const ch = chars.find(x => x.properties.writeWithoutResponse) || chars.find(x => x.properties.write);
+      if (ch) return ch;
+    } catch (e) {}
   }
   throw new Error('NO_WRITE');
 }
-async function btConnect() {
+function btDrop(forget) {
+  try { bt.device?.gatt?.disconnect(); } catch (e) {}
+  bt.ch = null; if (forget) bt.device = null; renderPrinter();
+}
+async function btOpen(device, say) {
+  say?.(`Connecting to ${device.name || 'printer'}…`);
+  const server = await withTimeout(device.gatt.connect(), 12000, 'TIMEOUT');
+  bt.ch = await withTimeout(findWritable(server), 8000, 'TIMEOUT');
+  bt.device = device; renderPrinter();
+}
+async function btConnect(say) {
   if (!navigator.bluetooth) throw new Error('NO_API');
+  btDrop(true);
+  say?.('Choose your printer in the list…');
   const device = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: BT_SERVICES });
   device.addEventListener('gattserverdisconnected', () => { bt.ch = null; renderPrinter(); });
-  const server = await device.gatt.connect();
-  bt.ch = await findWritable(server);
-  bt.device = device; bt.chunk = 100;
+  try { await btOpen(device, say); }
+  catch (e) { try { device.gatt.disconnect(); } catch (_) {} bt.device = null; bt.ch = null; renderPrinter(); throw e; }
+  bt.chunk = 100;
   S.settings.printerName = device.name || 'Bluetooth printer'; persist(); renderPrinter();
 }
-async function btEnsure() {
+async function btEnsure(say) {
   if (bt.ch && bt.device?.gatt?.connected) return;
-  if (bt.device) { const server = await bt.device.gatt.connect(); bt.ch = await findWritable(server); renderPrinter(); return; }
-  await btConnect();
+  if (bt.device) { try { await btOpen(bt.device, say); return; } catch (e) { btDrop(true); throw e; } }
+  await btConnect(say);
 }
+// Release the printer when this tab is hidden or closed, so another tab or app can reach it.
+// The chosen device is kept, so the next print reconnects without showing the list again.
+document.addEventListener('visibilitychange', () => { if (document.hidden && bt.device?.gatt?.connected) { try { bt.device.gatt.disconnect(); } catch (e) {} } });
+window.addEventListener('pagehide', () => { try { bt.device?.gatt?.disconnect(); } catch (e) {} });
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-async function btWrite(bytes) {
-  await btEnsure();
+async function btWrite(bytes, say) {
+  await btEnsure(say);
+  say?.('Printing…');
   const ch = bt.ch;
   const w = p => ch.properties.writeWithoutResponse && ch.writeValueWithoutResponse ? ch.writeValueWithoutResponse(p)
     : ch.writeValueWithResponse ? ch.writeValueWithResponse(p) : ch.writeValue(p);
@@ -702,12 +732,13 @@ async function btWrite(bytes) {
   // 100 bytes + 25 ms is confirmed working on the AGI-PR5000UBT (Nov 2026).
   for (let i = 0; i < bytes.length;) {
     const part = bytes.slice(i, i + bt.chunk);
-    try { await w(part); i += part.length; await sleep(bt.chunk > 20 ? 25 : 8); }
-    catch (e) { if (bt.chunk > 20) { bt.chunk = 20; continue; } throw e; }
+    try { await withTimeout(w(part), 5000, 'TIMEOUT'); i += part.length; await sleep(bt.chunk > 20 ? 25 : 8); }
+    catch (e) { if (e.message !== 'TIMEOUT' && bt.chunk > 20) { bt.chunk = 20; continue; } btDrop(true); throw e; }
   }
 }
 function btError(e) {
   const m = String(e && (e.message || e)), n = e && e.name;
+  if (m === 'TIMEOUT') return 'The printer didn\'t answer. Turn it off and on, close any other Chrome tab that has this app open (only one tab can hold the printer), then tap again and pick it from the list.';
   if (m === 'NO_API') return EMBEDDED ? 'Bluetooth is blocked inside the Claude viewer. Open the hosted page in Chrome on Android.' : 'This browser has no Web Bluetooth (iPhone/Safari and Firefox don\'t). Use Chrome on Android, or the RawBT app.';
   if (n === 'NotFoundError') return /cancel/i.test(m) ? 'No printer chosen.' : 'No printer found. Turn the printer on and make sure Bluetooth and Location are enabled on the phone.';
   if (n === 'SecurityError' || /permissions policy|disallowed|not allowed/i.test(m)) return EMBEDDED ? 'Bluetooth is blocked inside the Claude viewer. Open the hosted page in Chrome on Android.' : 'Bluetooth needs the page to be opened from an https:// address.';
@@ -945,10 +976,10 @@ function setStatus(sel, msg, kind) { const el = $(sel); el.hidden = !msg; el.tex
 
 $('#btnBT').addEventListener('click', async e => {
   const btn = e.currentTarget; btn.disabled = true;
-  setStatus('#pvStatus', bt.ch ? 'Sending to printer…' : 'Choose your printer in the list…');
+  const say = m => setStatus('#pvStatus', m);
   try {
     const bytes = escpos(pv.slip, S.settings, S.settings.copies);
-    await btWrite(bytes);
+    await btWrite(bytes, say);
     setStatus('#pvStatus', `Sent to ${S.settings.printerName || 'printer'}.`, 'ok');
     record('Bluetooth');
   } catch (err) { setStatus('#pvStatus', btError(err), 'err'); }
@@ -997,14 +1028,12 @@ function renderPrinter() {
 }
 $('#btnConnect').addEventListener('click', async () => {
   if (bt.ch && bt.device?.gatt?.connected) { bt.device.gatt.disconnect(); bt.ch = null; renderPrinter(); return; }
-  setStatus('#setStatus', 'Choose your printer in the list…');
-  try { bt.device = null; await btConnect(); setStatus('#setStatus', 'Connected to ' + S.settings.printerName + '.', 'ok'); }
+  try { await btConnect(m => setStatus('#setStatus', m)); setStatus('#setStatus', 'Connected to ' + S.settings.printerName + '.', 'ok'); }
   catch (e) { setStatus('#setStatus', btError(e), 'err'); }
 });
 $('#btnTest').addEventListener('click', async e => {
   const btn = e.currentTarget; btn.disabled = true;
-  setStatus('#setStatus', bt.ch ? 'Sending test page…' : 'Choose your printer in the list…');
-  try { await btWrite(testBytes(S.settings)); setStatus('#setStatus', `Test page sent to ${S.settings.printerName || 'printer'}. Compare the two accent lines.`, 'ok'); }
+  try { await btWrite(testBytes(S.settings), m => setStatus('#setStatus', m)); setStatus('#setStatus', `Test page sent to ${S.settings.printerName || 'printer'}. Compare the two accent lines.`, 'ok'); }
   catch (err) { setStatus('#setStatus', btError(err), 'err'); }
   btn.disabled = false;
 });
