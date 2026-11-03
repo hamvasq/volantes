@@ -579,7 +579,7 @@ function receipt(sl, st, printedAt) {
   lr('TOTAL ' + cur, money(total), { b: 1, h: 1 });
   rule('=');
   if (st.words) wrap('Son: ' + amountWords(total, sl.currency));
-  if (sl.concept) { add('Concepto:'); wrap(sl.concept, 1); }
+  if (sl.concept) { rule(); add('CONCEPTO:', { b: 1 }); wrap(sl.concept, 1, { b: 1 }); rule(); }
   if (sl.ref) lr('Ref.:', sl.ref);
   if (sl.depositor) lr('Depositante:', sl.depositor);
   if (st.signatures) {
