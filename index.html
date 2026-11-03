@@ -698,12 +698,12 @@ async function btWrite(bytes) {
   const ch = bt.ch;
   const w = p => ch.properties.writeWithoutResponse && ch.writeValueWithoutResponse ? ch.writeValueWithoutResponse(p)
     : ch.writeValueWithResponse ? ch.writeValueWithResponse(p) : ch.writeValue(p);
-  // Stream the whole job back to back (no pauses) so the motor runs continuously instead of stop-start.
-  // Each write waits for the previous one, which keeps Chrome's Bluetooth queue from overflowing.
+  // Paced writes: the MPT-II Bluetooth chip drops data sent back to back, so pause after each chunk.
+  // 100 bytes + 25 ms is confirmed working on the AGI-PR5000UBT (Nov 2026).
   for (let i = 0; i < bytes.length;) {
     const part = bytes.slice(i, i + bt.chunk);
-    try { await w(part); i += part.length; }
-    catch (e) { if (bt.chunk > 20) { bt.chunk = 20; await sleep(30); continue; } throw e; }
+    try { await w(part); i += part.length; await sleep(bt.chunk > 20 ? 25 : 8); }
+    catch (e) { if (bt.chunk > 20) { bt.chunk = 20; continue; } throw e; }
   }
 }
 function btError(e) {
