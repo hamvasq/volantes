@@ -1,5 +1,10 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
 <title>Volantes de Depósito</title>
 <meta name="claude:viewport-fit-sides" content="cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#17607A">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -7,6 +12,11 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap">
 <style id="pageStyle">@page{margin:2mm}</style>
 <style>
+/* Base reset so the page behaves the same standalone (GitHub Pages) and inside the Claude viewer */
+[hidden]{display:none!important}
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+img{max-width:100%}
 /* Layout: one-column phone app — sticky header, scrolling form sections, fixed dock (running total + tabs) at the bottom.
    Look: bank security-paper teal ink on a faintly mint ground; mono figures like a teller's tape. */
 :root{
@@ -203,7 +213,8 @@ input.acct{font-family:var(--f-num);letter-spacing:.04em}
 }
 @media (max-width:380px){.den{grid-template-columns:minmax(76px,1fr) 10px 64px minmax(76px,1fr);gap:6px}.check-grid{grid-template-columns:1fr}}
 </style>
-
+</head>
+<body>
 <header class="appbar">
   <div class="appbar-in">
     <div class="mark" aria-hidden="true">
@@ -1050,3 +1061,5 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') { if (!$('#t
 fillForm(); renderPrinter(); show('slip');
 })();
 </script>
+</body>
+</html>
