@@ -21,6 +21,7 @@ img{max-width:100%}
    Look: bank security-paper teal ink on a faintly mint ground; mono figures like a teller's tape. */
 :root{
   --bg:#EDF3F1; --surface:#FFFFFF; --sunk:#E2EBE8; --ink:#13232A; --muted:#566A6F; --line:#CCD9D5;
+  --btn-bg:#E4EFF2; --btn-line:#9DBAC3; --btn-ink:#0F4A5E;
   --accent:#17607A; --accent-ink:#FFFFFF; --accent-soft:#D3E7EE; --stamp:#A8392D; --ok:#26744A; --warn:#8A5E00;
   --paper:#FFFFFF; --paper-ink:#111111; --shadow:0 1px 2px rgba(19,35,42,.06),0 6px 20px rgba(19,35,42,.08);
   --f-ui:"Schibsted Grotesk",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
@@ -29,10 +30,12 @@ img{max-width:100%}
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#0D1517; --surface:#152024; --sunk:#1B292E; --ink:#E1EAE8; --muted:#90A2A4; --line:#29393E;
+  --btn-bg:#203940; --btn-line:#4E7380; --btn-ink:#CFE9F1;
   --accent:#5AAEC6; --accent-ink:#04212A; --accent-soft:#17363F; --stamp:#E57B6D; --ok:#6BC28E; --warn:#E2B44F;
   --paper:#F6F6F1; --paper-ink:#111111; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35); color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0D1517; --surface:#152024; --sunk:#1B292E; --ink:#E1EAE8; --muted:#90A2A4; --line:#29393E;
+  --btn-bg:#203940; --btn-line:#4E7380; --btn-ink:#CFE9F1;
   --accent:#5AAEC6; --accent-ink:#04212A; --accent-soft:#17363F; --stamp:#E57B6D; --ok:#6BC28E; --warn:#E2B44F;
   --paper:#F6F6F1; --paper-ink:#111111; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35); color-scheme:dark}
 
@@ -91,7 +94,8 @@ input.acct{font-family:var(--f-num);letter-spacing:.04em}
 .seg input:focus-visible+span{outline:2px solid var(--accent);outline-offset:-3px}
 
 /* Buttons */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:9px 16px;border-radius:8px;border:1px solid var(--line);background:var(--surface);font-weight:600;font-size:14.5px;cursor:pointer;text-align:center}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:9px 16px;border-radius:8px;border:1px solid var(--btn-line);background:var(--btn-bg);color:var(--btn-ink);font-weight:600;font-size:14.5px;cursor:pointer;text-align:center}
+.btn:active{filter:brightness(1.12)}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .btn.ghost{background:transparent}
 .btn.danger{color:var(--stamp)}
@@ -99,7 +103,7 @@ input.acct{font-family:var(--f-num);letter-spacing:.04em}
 .btn.block{width:100%}
 .btn.sm{min-height:36px;padding:6px 12px;font-size:13.5px}
 .btn:disabled{opacity:.5;cursor:not-allowed}
-.icon-btn{width:36px;height:36px;border-radius:8px;border:1px solid var(--line);background:transparent;cursor:pointer;display:grid;place-items:center;font-size:16px;color:var(--muted)}
+.icon-btn{width:36px;height:36px;border-radius:8px;border:1px solid var(--btn-line);background:var(--btn-bg);cursor:pointer;display:grid;place-items:center;font-size:16px;color:var(--btn-ink)}
 
 /* Templates strip */
 .strip{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;margin-inline:-2px;padding-inline:2px}
