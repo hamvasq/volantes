@@ -74,6 +74,7 @@ fieldset.sec>legend.sec-title{float:left;width:100%}
 .sec-title .num{letter-spacing:0;text-transform:none;font-size:13px;color:var(--ink);font-weight:500}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .row>*{min-width:0}
+.row:has(> [hidden]){grid-template-columns:1fr}
 label.f{display:flex;flex-direction:column;gap:5px;font-size:12.5px;font-weight:500;color:var(--muted);min-width:0}
 input[type=text],input[type=date],input:not([type]),select,textarea{width:100%;min-height:44px;padding:9px 11px;border:1px solid var(--line);border-radius:8px;background:var(--bg);font-size:16px;color:var(--ink)}
 textarea{min-height:90px;font-family:var(--f-num);font-size:12.5px;resize:vertical}
@@ -241,13 +242,27 @@ input.acct{font-family:var(--f-num);letter-spacing:.04em}
     </div>
 
     <form id="slipForm" autocomplete="off" style="display:flex;flex-direction:column;gap:14px" onsubmit="return false">
+      <div class="seg" role="radiogroup" aria-label="Slip type">
+        <label><input type="radio" name="slipType" id="f-type-d" data-k="type" value="deposit"><span>Depósito a cuenta</span></label>
+        <label><input type="radio" name="slipType" id="f-type-c" data-k="type" value="card"><span>Pago de tarjeta</span></label>
+      </div>
       <fieldset class="sec">
-        <legend class="sec-title">Cuenta</legend>
-        <label class="f">Banco<input id="f-bank" data-k="bank" list="banks" placeholder="Banco Popular Dominicano"></label>
-        <label class="f">Número de cuenta<input id="f-account" data-k="account" class="acct" inputmode="text" placeholder="000-000000-0"></label>
-        <label class="f">Titular (account name)<input id="f-holder" data-k="holder" placeholder="Nombre en la cuenta"></label>
+        <legend class="sec-title" id="f-legend">Cuenta</legend>
+        <label class="f"><span id="f-bankLbl">Banco</span><input id="f-bank" data-k="bank" list="banks" placeholder="Banco Popular Dominicano"></label>
+        <label class="f" id="f-accountWrap">Número de cuenta<input id="f-account" data-k="account" class="acct" inputmode="text" placeholder="000-000000-0"></label>
+        <div id="f-cardOnly" hidden style="display:flex;flex-direction:column;gap:12px">
+          <div class="f" style="display:flex;flex-direction:column;gap:5px;font-size:12.5px;font-weight:500;color:var(--muted)">Identificar la tarjeta con
+            <div class="seg" role="radiogroup" aria-label="Card identification">
+              <label><input type="radio" name="cardMode" id="f-cmode-full" data-k="cardMode" value="full"><span>Número completo</span></label>
+              <label><input type="radio" name="cardMode" id="f-cmode-l4" data-k="cardMode" value="last4"><span>Últimos 4 + cédula</span></label>
+            </div>
+          </div>
+          <label class="f"><span id="f-cardLbl">Número de tarjeta</span><input id="f-card" data-k="card" class="acct" inputmode="numeric" placeholder="0000 0000 0000 0000"></label>
+          <label class="f" id="f-cedWrap">Cédula del titular<input id="f-cedula" data-k="cedula" class="acct" inputmode="numeric" placeholder="000-0000000-0"></label>
+        </div>
+        <label class="f"><span id="f-holderLbl">Titular (account name)</span><input id="f-holder" data-k="holder" placeholder="Nombre en la cuenta"></label>
         <div class="row">
-          <div class="f" style="display:flex;flex-direction:column;gap:5px;font-size:12.5px;font-weight:500;color:var(--muted)">Tipo
+          <div class="f" id="f-accTypeWrap" style="display:flex;flex-direction:column;gap:5px;font-size:12.5px;font-weight:500;color:var(--muted)">Tipo
             <div class="seg" role="radiogroup" aria-label="Account type">
               <label><input type="radio" name="accType" id="f-acc-c" data-k="accType" value="Corriente"><span>Corriente</span></label>
               <label><input type="radio" name="accType" id="f-acc-a" data-k="accType" value="Ahorros"><span>Ahorros</span></label>
@@ -331,7 +346,8 @@ input.acct{font-family:var(--f-num);letter-spacing:.04em}
 
     <div class="sec">
       <div class="sec-title">On the slip</div>
-      <label class="f">Title<input id="s-title" placeholder="VOLANTE DE DEPOSITO"></label>
+      <label class="f">Title for deposits<input id="s-title" placeholder="VOLANTE DE DEPOSITO"></label>
+      <label class="f">Title for card payments<input id="s-cardTitle" placeholder="PAGO TARJETA DE CREDITO"></label>
       <label class="f">Header line (company, branch)<input id="s-header" placeholder="Optional, printed above the title"></label>
       <div class="setrow"><div><b>Monto en letras</b><small>“Son: doce mil pesos con 00/100”</small></div><label class="switch"><input type="checkbox" id="s-words"><span></span></label></div>
       <div class="setrow"><div><b>Signature lines</b><small>Depositante and bank receipt</small></div><label class="switch"><input type="checkbox" id="s-sign"><span></span></label></div>
@@ -400,11 +416,18 @@ input.acct{font-family:var(--f-num);letter-spacing:.04em}
     <div class="sheet-head"><h2 id="tplTitle">Template</h2><button class="icon-btn" id="tplClose" type="button" aria-label="Close">✕</button></div>
     <form id="tplForm" style="display:flex;flex-direction:column;gap:12px" onsubmit="return false" autocomplete="off">
       <label class="f">Template name<input id="t-name" placeholder="Ventas Estación Los Alcarrizos"></label>
-      <label class="f">Banco<input id="t-bank" list="banks"></label>
-      <label class="f">Número de cuenta<input id="t-account" class="acct"></label>
-      <label class="f">Titular<input id="t-holder"></label>
+      <label class="f">Tipo de volante<select id="t-type"><option value="deposit">Depósito a cuenta</option><option value="card">Pago de tarjeta</option></select></label>
+      <label class="f"><span id="t-bankLbl">Banco</span><input id="t-bank" list="banks"></label>
+      <label class="f" id="t-accountWrap">Número de cuenta<input id="t-account" class="acct"></label>
+      <div id="t-cardOnly" hidden style="display:flex;flex-direction:column;gap:12px">
+        <label class="f">Identificar la tarjeta con<select id="t-cardMode"><option value="full">Número completo</option><option value="last4">Últimos 4 dígitos + cédula</option></select></label>
+        <label class="f"><span id="t-cardLbl">Número de tarjeta</span><input id="t-card" class="acct" inputmode="numeric" placeholder="0000 0000 0000 0000"></label>
+        <label class="f" id="t-cedWrap">Cédula del titular<input id="t-cedula" class="acct" inputmode="numeric" placeholder="000-0000000-0"></label>
+        <p class="note" id="t-cardNote"></p>
+      </div>
+      <label class="f"><span id="t-holderLbl">Titular</span><input id="t-holder"></label>
       <div class="row">
-        <label class="f">Tipo<select id="t-accType"><option>Corriente</option><option>Ahorros</option></select></label>
+        <label class="f" id="t-accTypeWrap">Tipo<select id="t-accType"><option>Corriente</option><option>Ahorros</option></select></label>
         <label class="f">Moneda<select id="t-currency"><option>DOP</option><option>USD</option></select></label>
       </div>
       <label class="f">Depositante<input id="t-depositor" placeholder="Optional"></label>
@@ -430,7 +453,15 @@ const KEY = 'volantes.v1';
 const EMBEDDED = (() => { try { return window.self !== window.top; } catch (e) { return true; } })();
 const BANKS = ['Banco Popular Dominicano','Banreservas','Banco BHD','Scotiabank','Banco Santa Cruz','Banco Promerica','Banesco','Banco Caribe','Banco López de Haro','Banco Vimenca','Banco BDI','Banco Lafise','Citibank','Banco Ademi','Asociación Popular (APAP)','Asociación Cibao','Asociación La Nacional'];
 const DEN = { DOP: { bills: [2000,1000,500,200,100,50], coins: [25,10,5,1] }, USD: { bills: [100,50,20,10,5,2,1], coins: [] } };
-const TFIELDS = ['bank','account','accType','holder','currency','depositor','concept'];
+const TFIELDS = ['type','bank','account','accType','card','cardMode','cedula','holder','currency','depositor','concept'];
+const digits = v => String(v ?? '').replace(/\D/g, '');
+const fmtCard = (d, mode) => mode === 'last4' ? d : d.replace(/(\d{4})(?=\d)/g, '$1 ');
+const fmtCed = d => [d.slice(0, 3), d.slice(3, 10), d.slice(10, 11)].filter(Boolean).join('-');
+const cardMax = mode => mode === 'last4' ? 4 : 19;
+const isCard = x => x && x.type === 'card';
+// What identifies the destination in lists (never the full card number on screen)
+const idLine = x => isCard(x) ? (x.card ? 'Tarjeta •••• ' + String(x.card).slice(-4) : 'Tarjeta —') : (x.account || '—');
+const luhn = d => { let sum = 0, alt = false; for (let i = d.length - 1; i >= 0; i--) { let n = +d[i]; if (alt) { n *= 2; if (n > 9) n -= 9; } sum += n; alt = !alt; } return sum % 10 === 0; };
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 const pad2 = n => String(n).padStart(2, '0');
@@ -444,11 +475,11 @@ const sym = cur => cur === 'USD' ? 'US$' : 'RD$';
 const fmtDate = iso => { if (!iso) return ''; const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}`; };
 
 function blankSlip() {
-  return { id: uid(), date: today(), bank: '', account: '', accType: 'Corriente', holder: '', currency: 'DOP', depositor: '', concept: '', ref: '',
+  return { id: uid(), type: 'deposit', date: today(), bank: '', account: '', accType: 'Corriente', card: '', cardMode: 'full', cedula: '', holder: '', currency: 'DOP', depositor: '', concept: '', ref: '',
     cashMode: 'denoms', denoms: { DOP: {}, USD: {} }, loose: '', cashTotal: '', checks: [], templateId: null, example: false };
 }
-const pick = t => { const o = {}; TFIELDS.forEach(k => o[k] = t[k] ?? ''); return o; };
-const defaultSettings = () => ({ paper: 58, copies: 1, accents: 'strip', header: '', title: 'VOLANTE DE DEPOSITO', signatures: true, words: true, stamp: true, cut: false, printerName: '' });
+const pick = t => { const o = {}; TFIELDS.forEach(k => o[k] = t[k] ?? ''); o.type = o.type || 'deposit'; o.cardMode = o.cardMode || 'full'; o.accType = o.accType || 'Corriente'; return o; };
+const defaultSettings = () => ({ paper: 58, copies: 1, accents: 'strip', header: '', title: 'VOLANTE DE DEPOSITO', cardTitle: 'PAGO TARJETA DE CREDITO', signatures: true, words: true, stamp: true, cut: false, printerName: '' });
 
 function seed() {
   const t1 = { id: 'ex1', name: 'Ventas estación (example)', bank: 'Banco Popular Dominicano', account: '000-000000-0', accType: 'Corriente', holder: 'Empresa Ejemplo SRL', currency: 'DOP', depositor: '', concept: 'Depósito ventas en efectivo', example: true };
@@ -468,6 +499,7 @@ S.settings = Object.assign(defaultSettings(), S.settings);
 S.templates = S.templates || []; S.history = S.history || [];
 let slip = S.draft || blankSlip();
 slip.denoms = slip.denoms || { DOP: {}, USD: {} };
+slip.type = slip.type || 'deposit'; slip.cardMode = slip.cardMode || 'full'; slip.card = slip.card || ''; slip.cedula = slip.cedula || '';
 
 let saveT;
 function persist() { try { S.draft = slip; localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
@@ -542,12 +574,17 @@ function receipt(sl, st, printedAt) {
   const { cash, chk, total } = calc(sl);
 
   if (st.header) wrap(st.header, 0, { c: 1, b: 1 });
-  add(st.title || 'VOLANTE DE DEPOSITO', { c: 1, b: 1, h: 1 });
+  add(isCard(sl) ? (st.cardTitle || 'PAGO TARJETA DE CREDITO') : (st.title || 'VOLANTE DE DEPOSITO'), { c: 1, b: 1, h: 1 });
   rule();
   lr('Fecha:', fmtDate(sl.date));
   lr('Banco:', sl.bank);
-  lr('Cuenta:', sl.account, { b: 1 });
-  lr('Tipo:', sl.accType);
+  if (isCard(sl)) {
+    if (sl.cardMode === 'last4') { lr('Tarjeta:', '**** ' + (sl.card || '____'), { b: 1 }); lr('Cédula:', fmtCed(sl.cedula || ''), { b: 1 }); }
+    else lr('Tarjeta:', fmtCard(sl.card || '', 'full'), { b: 1 });
+  } else {
+    lr('Cuenta:', sl.account, { b: 1 });
+    lr('Tipo:', sl.accType);
+  }
   lr('Moneda:', sl.currency);
   add('Titular:');
   wrap(sl.holder || '-', 1, { b: 1 });
@@ -771,12 +808,27 @@ function btError(e) {
 /* ---------- Rendering: slip form ---------- */
 function fillForm() {
   ['bank','account','holder','date','ref','depositor','concept','cashTotal'].forEach(k => { const el = $('#f-' + k); if (el) el.value = slip[k] ?? ''; });
+  $('#f-card').value = fmtCard(slip.card || '', slip.cardMode); $('#f-cedula').value = fmtCed(slip.cedula || '');
+  $$('input[name=slipType]').forEach(r => r.checked = r.value === slip.type);
+  $$('input[name=cardMode]').forEach(r => r.checked = r.value === slip.cardMode);
+  syncType();
   $$('input[name=accType]').forEach(r => r.checked = r.value === slip.accType);
   $$('input[name=currency]').forEach(r => r.checked = r.value === slip.currency);
   $$('input[name=cashMode]').forEach(r => r.checked = r.value === slip.cashMode);
   renderDenoms(); renderChecks(); syncCashMode(); renderStrip();
   $('#exampleBanner').hidden = !slip.example;
   updateTotals();
+}
+function syncType() {
+  const card = isCard(slip), l4 = slip.cardMode === 'last4';
+  $('#f-legend').textContent = card ? 'Tarjeta' : 'Cuenta';
+  $('#f-bankLbl').textContent = card ? 'Banco emisor' : 'Banco';
+  $('#f-holderLbl').textContent = card ? 'Titular de la tarjeta' : 'Titular (account name)';
+  $('#f-holder').placeholder = card ? 'Nombre como aparece en la tarjeta' : 'Nombre en la cuenta';
+  $('#f-accountWrap').hidden = card; $('#f-accTypeWrap').hidden = card; $('#f-cardOnly').hidden = !card;
+  $('#f-cardLbl').textContent = l4 ? 'Últimos 4 dígitos' : 'Número de tarjeta';
+  $('#f-card').placeholder = l4 ? '0000' : '0000 0000 0000 0000';
+  $('#f-cedWrap').hidden = !l4;
 }
 function syncCashMode() {
   const tot = slip.cashMode === 'total';
@@ -814,7 +866,7 @@ function updateTotals() {
   $('#totSub').textContent = `Efectivo ${money(cash)} · Cheques ${money(chk)}`;
 }
 function renderStrip() {
-  const chips = S.templates.map(t => `<button type="button" class="tchip${slip.templateId === t.id ? ' active' : ''}" data-tpl="${esc(t.id)}"><b>${esc(t.name)}</b><small>${esc(t.currency)} · ${esc(t.account || '—')}</small></button>`).join('');
+  const chips = S.templates.map(t => `<button type="button" class="tchip${slip.templateId === t.id ? ' active' : ''}" data-tpl="${esc(t.id)}"><b>${esc(t.name)}</b><small>${esc(t.currency)} · ${esc(idLine(t))}</small></button>`).join('');
   $('#tplStrip').innerHTML = chips + `<button type="button" class="tchip add" id="chipSaveTpl">+ Save as template</button>`;
 }
 function markEdited() { if (slip.example) { slip.example = false; $('#exampleBanner').hidden = true; } }
@@ -823,8 +875,13 @@ $('#slipForm').addEventListener('input', e => {
   const t = e.target;
   if (t.name === 'cashMode') { slip.cashMode = t.value; syncCashMode(); }
   else if (t.dataset.k) {
-    slip[t.dataset.k] = t.value;
-    if (t.dataset.k === 'currency') renderDenoms();
+    const k = t.dataset.k;
+    if (k === 'card') { const d = digits(t.value).slice(0, cardMax(slip.cardMode)); slip.card = d; t.value = fmtCard(d, slip.cardMode); }
+    else if (k === 'cedula') { const d = digits(t.value).slice(0, 11); slip.cedula = d; t.value = fmtCed(d); }
+    else slip[k] = t.value;
+    if (k === 'currency') renderDenoms();
+    if (k === 'type') syncType();
+    if (k === 'cardMode') { if (slip.cardMode === 'last4') slip.card = slip.card.slice(-4); $('#f-card').value = fmtCard(slip.card, slip.cardMode); syncType(); }
   } else if (t.dataset.den) {
     const clean = t.value.replace(/\D/g, ''); if (clean !== t.value) t.value = clean;
     (slip.denoms[slip.currency] ||= {})[t.dataset.den] = clean;
@@ -895,8 +952,8 @@ let editingTpl = null;
 function renderTplList() {
   $('#tplList').innerHTML = S.templates.length ? S.templates.map(t => `
     <div class="card">
-      <div class="card-top"><h3>${esc(t.name)}</h3>${t.example ? '<span class="badge ex">Example</span>' : `<span class="badge">${esc(t.currency)}</span>`}</div>
-      <div class="meta">${esc(t.bank || '—')} · ${esc(t.accType)}<br>${esc(t.account || '—')} · ${esc(t.holder || '—')}${t.concept ? '<br>' + esc(t.concept) : ''}</div>
+      <div class="card-top"><h3>${esc(t.name)}</h3>${t.example ? '<span class="badge ex">Example</span>' : `<span class="badge">${isCard(t) ? 'Tarjeta · ' : ''}${esc(t.currency)}</span>`}</div>
+      <div class="meta">${esc(t.bank || '—')} · ${isCard(t) ? 'Pago de tarjeta' + (t.cardMode === 'last4' ? ' (últimos 4 + cédula)' : '') : esc(t.accType)}<br>${esc(idLine(t))} · ${esc(t.holder || '—')}${t.concept ? '<br>' + esc(t.concept) : ''}</div>
       <div class="card-actions"><button class="btn sm primary" data-use="${esc(t.id)}" type="button">Use for new slip</button><button class="btn sm" data-edit="${esc(t.id)}" type="button">Edit</button></div>
     </div>`).join('') : '<div class="empty">No templates yet. Fill a slip and tap “Save as template”, or tap + New.</div>';
 }
@@ -905,12 +962,31 @@ $('#tplList').addEventListener('click', e => {
   if (u) { const t = S.templates.find(x => x.id === u.dataset.use); slip = blankSlip(); Object.assign(slip, pick(t)); slip.templateId = t.id; fillForm(); persist(); show('slip'); toast(`New slip from “${t.name}”`); }
   if (ed) { const t = S.templates.find(x => x.id === ed.dataset.edit); openTpl(t, t); }
 });
-$('#btnNewTpl').addEventListener('click', () => openTpl(null, { accType: 'Corriente', currency: 'DOP' }));
+$('#btnNewTpl').addEventListener('click', () => openTpl(null, { type: 'deposit', accType: 'Corriente', cardMode: 'full', currency: 'DOP' }));
+function syncTplType() {
+  const card = $('#t-type').value === 'card', l4 = $('#t-cardMode').value === 'last4';
+  $('#t-bankLbl').textContent = card ? 'Banco emisor' : 'Banco';
+  $('#t-holderLbl').textContent = card ? 'Titular de la tarjeta' : 'Titular';
+  $('#t-accountWrap').hidden = card; $('#t-accTypeWrap').hidden = card; $('#t-cardOnly').hidden = !card;
+  $('#t-cardLbl').textContent = l4 ? 'Últimos 4 dígitos' : 'Número de tarjeta';
+  $('#t-card').placeholder = l4 ? '0000' : '0000 0000 0000 0000';
+  $('#t-cedWrap').hidden = !l4;
+  $('#t-cardNote').textContent = l4
+    ? 'Only the last 4 digits are saved and printed. The teller applies the payment with the titular\'s cédula.'
+    : 'The full number prints on the slip and is saved on this phone and in your backups.';
+}
+$('#t-type').addEventListener('change', syncTplType);
+$('#t-cardMode').addEventListener('change', () => { const el = $('#t-card'), m = $('#t-cardMode').value, d = digits(el.value); el.value = fmtCard(m === 'last4' ? d.slice(-4) : d, m); syncTplType(); });
+$('#t-card').addEventListener('input', e => { const m = $('#t-cardMode').value; e.target.value = fmtCard(digits(e.target.value).slice(0, cardMax(m)), m); });
+$('#t-cedula').addEventListener('input', e => { e.target.value = fmtCed(digits(e.target.value).slice(0, 11)); });
 function openTpl(t, data) {
   editingTpl = t;
   $('#tplTitle').textContent = t ? 'Edit template' : 'New template';
   $('#t-name').value = t ? t.name : '';
   TFIELDS.forEach(k => { $('#t-' + k).value = data[k] ?? ''; });
+  $('#t-type').value = data.type || 'deposit'; $('#t-cardMode').value = data.cardMode || 'full';
+  $('#t-card').value = fmtCard(digits(data.card), $('#t-cardMode').value); $('#t-cedula').value = fmtCed(digits(data.cedula));
+  syncTplType();
   if (!$('#t-accType').value) $('#t-accType').value = 'Corriente';
   if (!$('#t-currency').value) $('#t-currency').value = 'DOP';
   $('#tplDelete').hidden = !t;
@@ -923,6 +999,9 @@ $('#tplSave').addEventListener('click', () => {
   const name = $('#t-name').value.trim();
   if (!name) { $('#t-name').focus(); toast('Give the template a name'); return; }
   const data = { name }; TFIELDS.forEach(k => data[k] = $('#t-' + k).value.trim());
+  data.card = digits(data.card); data.cedula = digits(data.cedula);
+  if (data.type === 'card') { data.account = ''; if (data.cardMode === 'last4') data.card = data.card.slice(-4); else data.cedula = ''; }
+  else { data.card = ''; data.cedula = ''; }
   if (editingTpl) { Object.assign(editingTpl, data); editingTpl.example = false; }
   else { const t = Object.assign({ id: uid() }, data); S.templates.unshift(t); if (view === 'slip') slip.templateId = t.id; }
   persist(); closeTpl(); renderStrip(); if (view === 'templates') renderTplList(); toast('Template saved');
@@ -942,7 +1021,7 @@ function renderHist() {
     if (day !== last) { h += `<p class="day">${esc(day)}</p>`; last = day; }
     h += `<button class="card hist" type="button" data-h="${esc(e.id)}">
       <div class="card-top"><h3>${esc(e.slip.holder || e.slip.bank || 'Depósito')}</h3><span class="amt">${sym(e.slip.currency)} ${money(e.total)}</span></div>
-      <div class="meta">${esc(e.slip.bank)} · ${esc(e.slip.account)}<br>${pad2(d.getHours())}:${pad2(d.getMinutes())} · ${esc(e.method)}${e.count > 1 ? ` · printed ${e.count}×` : ''}${e.slip.concept ? ' · ' + esc(e.slip.concept) : ''}</div>
+      <div class="meta">${isCard(e.slip) ? 'Pago de tarjeta · ' : ''}${esc(e.slip.bank)} · ${esc(idLine(e.slip))}<br>${pad2(d.getHours())}:${pad2(d.getMinutes())} · ${esc(e.method)}${e.count > 1 ? ` · printed ${e.count}×` : ''}${e.slip.concept ? ' · ' + esc(e.slip.concept) : ''}</div>
     </button>`;
   }
   $('#histList').innerHTML = h;
@@ -973,7 +1052,12 @@ function openPreview(sl, hist) {
   $('#btnDoneNew').hidden = true;
   setStatus('#pvStatus', '');
   const warn = [];
-  if (!sl.account) warn.push('the account number is empty');
+  if (isCard(sl)) {
+    const d = sl.card || '';
+    if (sl.cardMode === 'last4') { if (d.length !== 4) warn.push('the last 4 digits of the card are missing'); if ((sl.cedula || '').length !== 11) warn.push('the cédula is incomplete'); }
+    else if (d.length < 13) warn.push('the card number is incomplete');
+    else if (!luhn(d)) warn.push('the card number doesn\'t pass the check digit, so there may be a typo');
+  } else if (!sl.account) warn.push('the account number is empty');
   if (!calc(sl).total) warn.push('the total is 0.00');
   if (warn.length) setStatus('#pvStatus', 'Check before printing: ' + warn.join(' and ') + '.', 'warn');
   renderPaper(); renderPrinter();
@@ -1064,7 +1148,7 @@ function fillSettings() {
   $$('input[name=paper]').forEach(r => r.checked = r.value == st.paper);
   $$('input[name=accents]').forEach(r => r.checked = r.value === st.accents);
   $('#s-cut').checked = st.cut; $('#s-words').checked = st.words; $('#s-sign').checked = st.signatures; $('#s-stamp').checked = st.stamp;
-  $('#s-title').value = st.title; $('#s-header').value = st.header;
+  $('#s-title').value = st.title; $('#s-cardTitle').value = st.cardTitle; $('#s-header').value = st.header;
   renderPrinter();
 }
 $('#view-setup').addEventListener('input', e => {
@@ -1076,6 +1160,7 @@ $('#view-setup').addEventListener('input', e => {
   else if (t.id === 's-sign') st.signatures = t.checked;
   else if (t.id === 's-stamp') st.stamp = t.checked;
   else if (t.id === 's-title') st.title = t.value;
+  else if (t.id === 's-cardTitle') st.cardTitle = t.value;
   else if (t.id === 's-header') st.header = t.value;
   else return;
   save();
